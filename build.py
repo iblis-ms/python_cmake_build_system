@@ -11,7 +11,7 @@ import sys
 import build.buildSystem
    
 def main():
-    build_system = build.buildSystem.BuildSystemHelper()
+    build_system = build.buildSystem.BuildSystem()
 
     return build_system.simpleRun('Test App')
    

@@ -14,6 +14,10 @@ import requests
 import platform 
 from enum import IntEnum, unique
 
+from .googleTest import GoogleTest
+from .sanitizers import Sanitizer
+from .utils import Utils
+
 @unique
 class CppStandard(IntEnum):
     CPP_98 = 98
@@ -22,23 +26,16 @@ class CppStandard(IntEnum):
     CPP_17 = 17
     CPP_20 = 20
 
-
-class BuildSystemHelper:
+class BuildSystem:
     """
     Class that helps running CMake.
     """
 
-    @staticmethod
-    def __downloadScript(url, output_path):
-        response = requests.get(url, allow_redirects=True)
-        if response.status_code != 200:
-            print('Downloading ' + str(url) + ' to ' + str(output_path) + ' FAILED')
-            return False
-
-        print('Downloading ' + str(url) + ' to ' + str(output_path))
-        open(output_path, 'wb').write(response.content)
-        return True
-
+        
+    def __init__(self):
+        self.gtest = GoogleTest()
+        self.sanitizer = Sanitizer()
+        
     @staticmethod
     def __downloadData():
         res = True
@@ -46,76 +43,10 @@ class BuildSystemHelper:
         add_target_URL = 'https://raw.githubusercontent.com/iblis-ms/cmake_add_target/master/AddTarget.cmake'
         add_target_path = os.path.join(script_dir_path, 'addTarget.cmake')
         if not os.path.isfile(add_target_path):
-            res = BuildSystemHelper.__downloadScript(add_target_URL, add_target_path)
+            res = Utils.downloadScript(add_target_URL, add_target_path)
 
         return res
     
-    def __run(self, cmd, working_dir, env = None):
-        """Runs given command in given working directory
-        
-        Parameters
-        ----------
-        cmd : array 
-            Command to run. The program and each argument is item in the array, i. e. ['echo', '${PATH']
-        working_dir : string 
-            orking directory - location from command will be run
-            
-        Returns
-        -------
-        int
-            Error code from run command. 0 means finished successfully.
-        """
-        
-        os.environ['PYTHONUNBUFFERED'] = "1" # to not buffer logs, but print immediately 
-        print("####################################### <run> #######################################")
-        print("Working Directory: " + working_dir)
-        print("Command: " + ' '.join(cmd))
-        shell = False
-        if self.windows:
-            self = True
-        proc = subprocess.Popen(cmd,
-                                stdout = subprocess.PIPE,
-                                stderr=subprocess.STDOUT,
-                                cwd = working_dir,
-                                shell=shell, 
-                                env = env
-                                )
-        print("-------------------------------------- <output> -------------------------------------")
-
-        while True:
-            output = proc.stdout.readline()
-            pol = proc.poll()
-           
-            if (output == '' or output == b'') and pol is not None:
-                break
-            if output:
-                sys.stdout.buffer.write(output) 
-                sys.stdout.flush()
-                
-        return_code = proc.poll()
-        
-        print("-------------------------------------- </output> ------------------------------------")
-        print("Return code: " + str(return_code))
-        print("####################################### </run> ######################################")
-        
-        return return_code
-
-        
-    def __init__(self):
-
-        self.windows = False
-        self.linux = False
-        self.macos = False
-        plt = platform.system()
-
-        if plt == "Windows":
-            self.windows = True
-        elif plt == "Linux":
-            self.linux = True
-        elif plt == "Darwin":
-            self.macos = True
-        else:
-            print("Unidentified system")
 
     def get_argument_parser_items(self, description):
         """Get argParse object with generic params.
@@ -188,6 +119,12 @@ class BuildSystemHelper:
             action="store_true"
             )
         arg_parser.add_argument(
+            '-test_only',
+            '--run_test_only',
+            help='Run test only.',
+            action="store_true"
+            )
+        arg_parser.add_argument(
             '-test_inc',
             '--test_include',
             help='Include regex for test target.'
@@ -197,25 +134,10 @@ class BuildSystemHelper:
             '--test_exclude',
             help='Exclude regex for test target.'
             )
-            
-        memory_sanitizer = []
-        clang_posix_sanitizers = ['memory_sanitizer', 'address_sanitizer', 'thread_sanitizer', 'undefined_behavior_sanitizer']
-        if self.windows:
-            memory_sanitizer.append('dr_memory')
-        if self.linux:
-            memory_sanitizer.append('valgrind')
-            memory_sanitizer.extend(clang_posix_sanitizers)
-        if self.macos:
-            memory_sanitizer.append('valgrind')
-            memory_sanitizer.extend(clang_posix_sanitizers)
-              
-        arg_parser.add_argument(
-            '-san',
-            '--sanitizer',
-            choices = memory_sanitizer,
-            help='Memory sanitizer like: Dr Memory, Valgrind'
-            )
-
+                                                                                                
+        self.gtest.appendArgParse(arg_parser)
+        self.sanitizer.appendArgParse(arg_parser)
+        
         return arg_parser
         
     def generate(self, args, input_path, output_path, pre_generate_fun = None):
@@ -254,34 +176,26 @@ class BuildSystemHelper:
             cmd.append('-DADD_TARGET_TEST_TARGET_INCLUDE=' + args.test_include)
         if args.test_exclude is not None:
             cmd.append('-DADD_TARGET_TEST_TARGET_EXCLUDE=' + args.test_include)
-            
-        if args.sanitizer is not None:
-            if args.sanitizer == 'valgrind':
-                cmd.append('-DADD_TARGET_VALGRIND=1')
-            if args.sanitizer == 'dr_memory':
-                cmd.append('-DADD_TARGET_DR_MEMORY=1')
-            if args.sanitizer == 'memory_sanitizer':
-                cmd.append('-DADD_TARGET_CLANG_MEMORY_SANITIZER=1')
-            if args.sanitizer == 'address_sanitizer':
-                cmd.append('-DADD_TARGET_CLANG_ADDRESS_SANITIZER=1')
-            if args.sanitizer == 'thread_sanitizer':
-                cmd.append('-DADD_TARGET_CLANG_THREAD_SANITIZER=1')
-            if args.sanitizer == 'undefined_behavior_sanitizer':
-                cmd.append('-DADD_TARGET_CLANG_UNDEFINED_BEHAVIOR_SANITIZER=1')
+                        
                 
         if args.clean:
             shutil.rmtree(output_path, ignore_errors=True)
             
         if not os.path.isdir(output_path):
             os.makedirs(output_path)
-            
+                                    
+        gtestArgs = self.gtest.getCmakeDefines(args)
+        cmd.extend(gtestArgs)
+        sanitizerArgs = self.sanitizer.getCmakeDefines(args)
+        cmd.extend(sanitizerArgs)
+        
         if pre_generate_fun is not None:
             if not pre_generate_fun(args, input_path, output_path, cmd):
                 return False
         
         cmd.append(input_path)
         
-        return_code = self.__run(cmd, output_path)
+        return_code = Utils.run(cmd, output_path)
         
         return return_code
 
@@ -307,31 +221,29 @@ class BuildSystemHelper:
             cmd.extend(['--target', args.target])
             
         cmd.extend(['--config', args.profile])
-        return_code = self.__run(cmd, build_path)
+        return_code = Utils.run(cmd, build_path)
         
         return return_code
 
-    def runTest(self,  output_path, gtestColorOutput = True):
-        env = os.environ
-        if gtestColorOutput:
-            env["GTEST_COLOR"] = '1'
+    def runTest(self,  output_path):
         cmd = ['ctest', '--verbose']
-        return_code = self.__run(cmd, output_path)
+        return_code = Utils.run(cmd, output_path)
         
         return return_code
 
     def run(self, args, input_path, output_path):
-        generate_result = self.generate(args, input_path, output_path)
-        if generate_result != 0:
-            return False
-        if args.generate_only == True:
-            return True
+        if not args.run_test_only:
+            generate_result = self.generate(args, input_path, output_path)
+            if generate_result != 0:
+                return False
+            if args.generate_only == True:
+                return True
+    
+            build_result = self.build(args, output_path)
+            if build_result != 0:
+                return False;
 
-        build_result = self.build(args, output_path)
-        if build_result != 0:
-            return False;
-
-        if args.run_test == True:
+        if args.run_test == True or args.run_test_only == True:
             test_result = self.runTest(output_path)
             if test_result != 0:
                 return False
