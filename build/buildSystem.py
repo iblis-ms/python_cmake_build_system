@@ -6,12 +6,9 @@
 
 import argparse
 import os
-import subprocess
 import shutil
 from builtins import staticmethod
-import sys
 import requests
-import platform 
 from enum import IntEnum, unique
 
 from .googleTest import GoogleTest
@@ -191,8 +188,7 @@ class BuildSystem:
             cmd.append('-DADD_TARGET_TEST_TARGET_INCLUDE=' + args.test_include)
         if args.test_exclude is not None:
             cmd.append('-DADD_TARGET_TEST_TARGET_EXCLUDE=' + args.test_include)
-                        
-                
+
         if args.clean:
             shutil.rmtree(output_path, ignore_errors=True)
             
@@ -274,6 +270,3 @@ class BuildSystem:
         arg_parser = self.get_argument_parser_items(app_name)
         args = arg_parser.parse_args()
         return self.run(args, input_path, output_path)
-
-
-

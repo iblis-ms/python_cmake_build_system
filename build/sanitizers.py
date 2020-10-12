@@ -4,15 +4,7 @@
 # License: MIT
 # ULR: https://github.com/iblis-ms/python_cmake_build_system
 
-import argparse
-import os
-import subprocess
-import shutil
-from builtins import staticmethod
-import sys
 import requests
-import platform
-from enum import IntEnum, unique
 
 from .utils import Utils
 
