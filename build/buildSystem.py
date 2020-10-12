@@ -87,6 +87,16 @@ class BuildSystem:
             action="store_true"
             )
         arg_parser.add_argument(
+            '-c_c',
+            '--c_compiler',
+            help='C compiler.'
+            )
+        arg_parser.add_argument(
+            '-cxx_c',
+            '--cxx_compiler',
+            help='CXX compiler.'
+            )
+        arg_parser.add_argument(
             '-t',
             '--target',
             help='Target to build.'
@@ -169,6 +179,11 @@ class BuildSystem:
         cmd.append('-DCMAKE_BUILD_TYPE=' + args.profile)
         cmd.append('-DCMAKE_CXX_STANDARD=' + str(args.cpp_standard))
 
+        if args.c_compiler:
+            cmd.append('-DCMAKE_C_COMPILER=' + str(args.c_compiler))
+        if args.cxx_compiler:
+            cmd.append('-DCMAKE_CXX_STANDARD=' + str(args.cxx_compiler))
+            
         if args.cmake_definitions is not None:
             for cmake_def in args.cmake_definitions:
                 cmd.append('-D' + cmake_def)
