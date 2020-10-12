@@ -182,7 +182,7 @@ class BuildSystem:
         if args.c_compiler:
             cmd.append('-DCMAKE_C_COMPILER=' + str(args.c_compiler))
         if args.cxx_compiler:
-            cmd.append('-DCMAKE_CXX_STANDARD=' + str(args.cxx_compiler))
+            cmd.append('-DCMAKE_CXX_COMPILER=' + str(args.cxx_compiler))
             
         if args.cmake_definitions is not None:
             for cmake_def in args.cmake_definitions:
