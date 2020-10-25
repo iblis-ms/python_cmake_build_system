@@ -9,7 +9,7 @@ import os
 import shutil
 from builtins import staticmethod
 import requests
-from enum import IntEnum, unique
+from enum import IntEnum, unique, Enum
 
 from .googleTest import GoogleTest
 from .sanitizers import Sanitizer
@@ -23,6 +23,16 @@ class CppStandard(IntEnum):
     CPP_17 = 17
     CPP_20 = 20
 
+@unique
+class LogLevel(Enum):
+    ERROR = "ERROR"
+    WARNING = "WARNING"
+    NOTICE = "NOTICE"
+    STATUS = "STATUS"
+    VERBOSE = "VERBOSE"
+    DEBUG = "DEBUG"
+    TRACE = "TRACE"
+    
 class BuildSystem:
     """
     Class that helps running CMake.
@@ -141,7 +151,20 @@ class BuildSystem:
             '--test_exclude',
             help='Exclude regex for test target.'
             )
-                                                                                                
+            
+
+        log_level = []
+        for lvl in LogLevel:
+            log_level.append(lvl.value)
+            
+        arg_parser.add_argument(
+            '-cm_log',
+            '--cmake_log_level',
+            choices = log_level,
+            help='CMake Log level',
+            default=LogLevel.STATUS.value
+            )
+            
         self.gtest.appendArgParse(arg_parser)
         self.sanitizer.appendArgParse(arg_parser)
         
@@ -188,13 +211,21 @@ class BuildSystem:
             cmd.append('-DADD_TARGET_TEST_TARGET_INCLUDE=' + args.test_include)
         if args.test_exclude is not None:
             cmd.append('-DADD_TARGET_TEST_TARGET_EXCLUDE=' + args.test_include)
+            
+        cmd.append('--log-level=' + str(args.cmake_log_level))
+
+        if args.cmake_log_level == LogLevel.TRACE.name:
+            cmd.append('--log-context')
+            cmd.append('--debug-output')
+            cmd.append('--trace-expand')
+        
 
         if args.clean:
             shutil.rmtree(output_path, ignore_errors=True)
             
         if not os.path.isdir(output_path):
             os.makedirs(output_path)
-                                    
+            
         gtestArgs = self.gtest.getCmakeDefines(args)
         cmd.extend(gtestArgs)
         sanitizerArgs = self.sanitizer.getCmakeDefines(args)
@@ -236,8 +267,9 @@ class BuildSystem:
         
         return return_code
 
-    def runTest(self,  output_path):
+    def runTest(self, args, output_path):
         cmd = ['ctest', '--verbose']
+        cmd.extend(['-C', args.profile])
         return_code = Utils.run(cmd, output_path)
         
         return return_code
@@ -255,7 +287,7 @@ class BuildSystem:
                 return False;
 
         if args.run_test == True or args.run_test_only == True:
-            test_result = self.runTest(output_path)
+            test_result = self.runTest(args, output_path)
             if test_result != 0:
                 return False
 

@@ -29,28 +29,84 @@ if (NOT DEFINED ADD_TARGET_DEBUG)
     set(ADD_TARGET_DEBUG 1)
 endif ()
 
-include("${CMAKE_CURRENT_LIST_DIR}/conan.cmake")
+set(CONAN_CMAKE_FILE "${CMAKE_CURRENT_LIST_DIR}/conan.cmake") # set path to file
+
+if(NOT EXISTS "${CONAN_CMAKE_FILE}") # if not exist, download it
+   message(STATUS "Downloading conan.cmake from https://github.com/conan-io/cmake-conan")
+   file(DOWNLOAD "https://github.com/conan-io/cmake-conan/raw/v0.15/conan.cmake"
+                 "${CONAN_CMAKE_FILE}")
+endif()
+
+include("${CONAN_CMAKE_FILE}") 
 include("${CMAKE_CURRENT_LIST_DIR}/gtestHelper.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/sanitizerHelper.cmake")
 
+function(addGroupsInternal)
 
-# \brief Add files to groups for example to have groups in Visual Studio that match to folder structure.
-# \param[in] ROOT_PATH - Root path - groups will be created from this root path - the path given here is treaten as entry point.
-# \param[in] PATHS_TO_DIRS - Paths to folders with header files
-# \param[out] OUTPUT_FILES - Name of variable with result - a list of header files
-function(AddFileToGroupInternal ROOT_PATH PATHS_TO_DIRS OUTPUT_FILES)
-
-    foreach(PATH_TO_DIR IN LISTS PATHS_TO_DIRS)
-        file(GLOB_RECURSE PATHS_TO_FILES_HPP "${PATH_TO_DIR}/*.hpp")
-        source_group(TREE "${ROOT_PATH}" FILES ${PATHS_TO_FILES_HPP})
-        file(GLOB_RECURSE PATHS_TO_FILES_H "${PATH_TO_DIR}/*.h")
-        source_group(TREE "${ROOT_PATH}" FILES ${PATHS_TO_FILES_H})
-        list(APPEND BUF ${PATHS_TO_FILES_HPP} ${PATHS_TO_FILES_H})
-    endforeach()
+    set(OPTIONAL_ARGUMENTS_PATTERN 
+        )
     
-    set(${OUTPUT_FILES} ${BUF} PARENT_SCOPE)
-
+    set(ONE_ARGUMENT_PATTERN 
+        ROOT_PATH 
+        OUTPUT_FILES
+        ) 
+        
+    set(MULTI_ARGUMENT_PATTERN 
+        PATHS_TO_DIRS 
+        EXTENSIONS
+        )
+    
+    CMake_parse_arguments(ARG "${OPTIONAL_ARGUMENTS_PATTERN}" "${ONE_ARGUMENT_PATTERN}" "${MULTI_ARGUMENT_PATTERN}" ${ARGN} )
+    list(APPEND OUTPUT_FILES)
+    foreach(PATH_DIR IN LISTS ARG_PATHS_TO_DIRS)
+        
+    
+        foreach(EXTENSION IN LISTS ARG_EXTENSIONS)
+            file(GLOB_RECURSE PATHS_TO_FILES "${PATH_DIR}/*.${EXTENSION}")
+            
+            foreach(PATH_TO_FILE IN LISTS PATHS_TO_FILES)
+            
+                get_filename_component(OUTPUT_DIR "${PATH_TO_FILE}" DIRECTORY)
+                file(RELATIVE_PATH RELATIVE "${ARG_ROOT_PATH}" "${OUTPUT_DIR}")
+                string(REPLACE  "/" "\\"  OUTPUT_VAR "${RELATIVE}" )
+                source_group("${OUTPUT_VAR}" FILES "${PATH_TO_FILE}")
+                    
+            endforeach()
+            
+            list(APPEND OUTPUT_FILES "${PATHS_TO_FILES}")
+            
+        endforeach()
+                
+    endforeach()
+     
+    set(${ARG_OUTPUT_FILES} "${OUTPUT_FILES}" PARENT_SCOPE)
+    
 endfunction()
+
+
+function(addSrcGroupsInternal)
+    set(OPTIONAL_ARGUMENTS_PATTERN 
+        )
+    
+    set(ONE_ARGUMENT_PATTERN 
+        ROOT_PATH 
+        ) 
+        
+    set(MULTI_ARGUMENT_PATTERN 
+        PATHS_TO_SRCS
+        )
+    
+    CMake_parse_arguments(ARG "${OPTIONAL_ARGUMENTS_PATTERN}" "${ONE_ARGUMENT_PATTERN}" "${MULTI_ARGUMENT_PATTERN}" ${ARGN} )
+
+    foreach(PATH_TO_SRC IN LISTS ARG_PATHS_TO_SRCS)
+        get_filename_component(OUTPUT_DIR "${PATH_TO_SRC}" DIRECTORY)
+        file(RELATIVE_PATH RELATIVE  "${ARG_ROOT_PATH}" "${OUTPUT_DIR}")
+        string(REPLACE  "/" "\\"  OUTPUT_VAR "${RELATIVE}" )
+        source_group("${OUTPUT_VAR}" FILES "${PATH_TO_SRC}")
+    endforeach()
+endfunction()
+
+
 
 # \brief Creates target.
 # \param[in] TARGET_NAME Target name
@@ -143,12 +199,21 @@ function(AddTargetInternal)
             endif ()
         endif ()
     endif ()
-    AddFileToGroupInternal("${ADD_TARGET_TARGET_DIR}" "${ADD_TARGET_PUBLIC_INC_DIRS}" PUBLIC_INCS_TO_SRC)
-    AddFileToGroupInternal("${ADD_TARGET_TARGET_DIR}" "${ADD_TARGET_PRIVATE_INC_DIRS}" PRIVATE_INCS_TO_SRC)
-   
-    source_group(TREE "${ADD_TARGET_TARGET_DIR}" FILES ${ADD_TARGET_SRC})
 
-    set(SRC "${ADD_TARGET_SRC}" "${PUBLIC_INCS_TO_SRC}" "${PRIVATE_INCS_TO_SRC}" "${INTERFACE_INCS_TO_SRC}")
+    addGroupsInternal(ROOT_PATH "${ADD_TARGET_TARGET_DIR}" 
+        PATHS_TO_DIRS "${ADD_TARGET_PUBLIC_INC_DIRS}" 
+        EXTENSIONS "hpp" "h"
+        OUTPUT_FILES PUBLIC_INCS_TO_SRC)
+        
+    addGroupsInternal(ROOT_PATH "${ADD_TARGET_TARGET_DIR}" 
+        PATHS_TO_DIRS "${ADD_TARGET_PRIVATE_INC_DIRS}" 
+        EXTENSIONS "hpp" "h"
+        OUTPUT_FILES PRIVATE_INCS_TO_SRC)
+   
+    addSrcGroupsInternal(ROOT_PATH "${ADD_TARGET_TARGET_DIR}" 
+        PATHS_TO_SRCS "${ADD_TARGET_SRC}")
+        
+    set(SRC "${ADD_TARGET_SRC}" "${PUBLIC_INCS_TO_SRC}" "${PRIVATE_INCS_TO_SRC}")
     
     if ("${ADD_TARGET_TARGET_TYPE}" STREQUAL "EXE")
         add_executable("${ADD_TARGET_TARGET_NAME}" "${SRC}")
@@ -253,10 +318,12 @@ function(AddTargetInternal)
         endif()
     endforeach()
 
-    set_target_properties(${ADD_TARGET_TARGET_NAME} PROPERTIES 
-        RESOURCES_TO_COPY_TO_EXE_DIR "${ADD_TARGET_RESOURCES_TO_COPY_TO_EXE_DIR}"
-        RESOURCES_TO_COPY "${ADD_TARGET_RESOURCES_TO_COPY}"
-        )
+    if(NOT "${ADD_TARGET_TARGET_TYPE}" STREQUAL "INTERFACE")
+        set_target_properties(${ADD_TARGET_TARGET_NAME} PROPERTIES 
+            RESOURCES_TO_COPY_TO_EXE_DIR "${ADD_TARGET_RESOURCES_TO_COPY_TO_EXE_DIR}"
+            RESOURCES_TO_COPY "${ADD_TARGET_RESOURCES_TO_COPY}"
+            )
+    endif()
 
     if("${ADD_TARGET_TARGET_TYPE}" STREQUAL "EXE")
         get_target_property(LIB_RESOURCES_TO_COPY_TO_EXE_DIR ${ADD_TARGET_TARGET_NAME} RESOURCES_TO_COPY_TO_EXE_DIR)
