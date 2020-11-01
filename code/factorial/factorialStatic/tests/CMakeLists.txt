@@ -4,9 +4,9 @@ set(SRC_TEST
 	)
 
 addTestTarget(
-        TARGET_NAME "FactorialTest"
+        TARGET_NAME "FactorialStaticTest"
         TARGET_TYPE "EXE"
         SRC "${SRC}" "${SRC_TEST}"
-        PRIVATE_INC_DIRS "${INC}"
+        PRIVATE_INC_DIRS "${INTERFACE}"
         PUBLIC_LIBS "FactorialIterative" "FactorialRecursive"
 	)

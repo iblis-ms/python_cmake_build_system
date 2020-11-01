@@ -2,4 +2,7 @@
 add_subdirectory(factorialInterface)
 add_subdirectory(factorialIterative)
 add_subdirectory(factorialRecursive)
-add_subdirectory(factorialExe)
+add_subdirectory(factorialShared)
+add_subdirectory(factorialStatic)
+add_subdirectory(factorialExeStatic)
+add_subdirectory(factorialExeShared)

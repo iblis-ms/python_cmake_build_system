@@ -28,12 +28,13 @@ class Utils:
             
     @staticmethod
     def downloadScript(url, output_path):
+        logger = logging.getLogger("BuildSystem")
         response = requests.get(url, allow_redirects=True)
         if response.status_code != 200:
-            logging.error('Downloading ' + str(url) + ' to ' + str(output_path) + ' FAILED')
+            logger.error('Downloading ' + str(url) + ' to ' + str(output_path) + ' FAILED')
             return False
 
-        logging.info('Downloading ' + str(url) + ' to ' + str(output_path))
+        logger.info('Downloading ' + str(url) + ' to ' + str(output_path))
         open(output_path, 'wb').write(response.content)
         return True
             
@@ -54,13 +55,14 @@ class Utils:
             Error code from run command. 0 means finished successfully.
         """
         
+        logger = logging.getLogger("BuildSystem")
         os.environ['PYTHONUNBUFFERED'] = "1" # to not buffer logs, but print immediately
-        print("####################################### <run> #######################################")
-        print("Working Directory: " + working_dir)
-        print("Command: " + ' '.join(cmd))
+        logger.info("####################################### <run> #######################################")
+        logger.info("Working Directory: " + working_dir)
+        logger.info("Command: " + ' '.join(cmd))
         shell = False
         if Utils.sysOp().windows:
-            self = True
+            shell = True
         proc = subprocess.Popen(cmd,
                                 stdout = subprocess.PIPE,
                                 stderr=subprocess.STDOUT,
@@ -68,7 +70,7 @@ class Utils:
                                 shell=shell,
                                 env = env
                                 )
-        print("-------------------------------------- <output> -------------------------------------")
+        logger.info("-------------------------------------- <output> -------------------------------------")
 
         while True:
             output = proc.stdout.readline()
@@ -77,15 +79,16 @@ class Utils:
             if (output == '' or output == b'') and pol is not None:
                 break
             if output:
-                sys.stdout.buffer.write(output)
-                sys.stdout.flush()
+                strLineWithNewLine = str(output, 'utf-8')
+                line = strLineWithNewLine[:-1]
+                logger.info(line)
                 
         return_code = proc.poll()
         
-        print("-------------------------------------- </output> ------------------------------------")
-        print("Return code: " + str(return_code))
-        print("####################################### </run> ######################################")
+        logger.info("-------------------------------------- </output> ------------------------------------")
+        logger.info("Return code: " + str(return_code))
+        logger.info("####################################### </run> ######################################")
+        
         
         return return_code
 
-        

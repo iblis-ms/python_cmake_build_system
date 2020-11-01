@@ -1,16 +1,26 @@
 set(SRC
-	"${CMAKE_CURRENT_SOURCE_DIR}/src/FactorialFactoryRecursive.cpp"
-	"${CMAKE_CURRENT_SOURCE_DIR}/src/FactorialRecursive.cpp"
-	)
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/FactorialFactoryRecursive.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/FactorialRecursive.cpp"
+    )
 
 set(INC 
-	"${CMAKE_CURRENT_SOURCE_DIR}/inc"
-	)
+    "${CMAKE_CURRENT_SOURCE_DIR}/inc"
+    )
 
 set(INTERFACE
-	"${CMAKE_CURRENT_SOURCE_DIR}/interface"
-	)
+    "${CMAKE_CURRENT_SOURCE_DIR}/interface"
+    )
 
+
+set(RES_COPY_TO_EXE_DIR
+    "${CMAKE_CURRENT_SOURCE_DIR}/res/recursive.txt"
+    "${CMAKE_CURRENT_SOURCE_DIR}/res/recursive_res"
+    )
+
+set(RES_COPY
+    "${CMAKE_CURRENT_SOURCE_DIR}/res/recursive2.txt" TO "${CMAKE_BINARY_DIR}"
+    "${CMAKE_CURRENT_SOURCE_DIR}/res/recursive_res2" TO "${CMAKE_BINARY_DIR}"
+    )
 
 addTarget(
         TARGET_NAME "FactorialRecursive"
@@ -19,6 +29,14 @@ addTarget(
         PUBLIC_INC_DIRS "${INTERFACE}"
         PRIVATE_INC_DIRS "${INC}"
         PUBLIC_LIBS "FactorialInterface"
-	)
+        RESOURCES_TO_COPY_TO_EXE_DIR "${RES_COPY_TO_EXE_DIR}"
+        RESOURCES_TO_COPY "${RES_COPY}"
+    )
 
 add_subdirectory(tests)
+
+# ARCHIVE_OUTPUT_DIRECTORY
+# COMPILE_PDB_OUTPUT_DIRECTORY
+# LIBRARY_OUTPUT_DIRECTORY
+# PDB_OUTPUT_DIRECTORY
+# RUNTIME_OUTPUT_DIRECTORY

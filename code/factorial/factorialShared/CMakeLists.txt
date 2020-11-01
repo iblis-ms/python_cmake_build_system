@@ -1,18 +1,16 @@
 set(SRC
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/MainClass.cpp"
-	"${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp"
 	)
 
-set(INC 
-	"${CMAKE_CURRENT_SOURCE_DIR}/inc"
+set(INTERFACE 
+	"${CMAKE_CURRENT_SOURCE_DIR}/interface"
 	)
-
 
 addTarget(
-        TARGET_NAME "Factorial"
-        TARGET_TYPE "EXE"
+        TARGET_NAME "FactorialSharedLib"
+        TARGET_TYPE "SHARED"
         SRC "${SRC}"
-        PRIVATE_INC_DIRS "${INC}"
+        PUBLIC_INC_DIRS "${INTERFACE}"
         PUBLIC_LIBS "FactorialIterative" "FactorialRecursive"
 	)
 

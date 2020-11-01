@@ -10,6 +10,7 @@ import shutil
 from builtins import staticmethod
 import requests
 from enum import IntEnum, unique, Enum
+import logging
 
 from .googleTest import GoogleTest
 from .sanitizers import Sanitizer
@@ -40,6 +41,14 @@ class BuildSystem:
 
         
     def __init__(self):
+        self.logger = logging.getLogger("BuildSystem")
+        consoleLoggerhandler = logging.StreamHandler()
+        consoleLoggerhandler.setLevel(logging.INFO)
+        consoleFormatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        consoleLoggerhandler.setFormatter(consoleFormatter)
+        self.logger.addHandler(consoleLoggerhandler)
+        self.logger.setLevel(logging.INFO)
+        
         self.gtest = GoogleTest()
         self.sanitizer = Sanitizer()
         
@@ -126,18 +135,19 @@ class BuildSystem:
             '--cpp_standard',
             choices = cpp_std_choice,
             help='C++ standard',
+            type=int,
             default=CppStandard.CPP_17.value
             )
 
         arg_parser.add_argument(
-            '-test',
-            '--run_test',
-            help='Run test.',
+            '-tests',
+            '--run_tests',
+            help='Run tests.',
             action="store_true"
             )
         arg_parser.add_argument(
-            '-test_only',
-            '--run_test_only',
+            '-tests_only',
+            '--run_tests_only',
             help='Run test only.',
             action="store_true"
             )
@@ -150,6 +160,11 @@ class BuildSystem:
             '-test_exc',
             '--test_exclude',
             help='Exclude regex for test target.'
+            )
+        arg_parser.add_argument(
+            '-log_out',
+            '--log_output_file',
+            help='Log output file'
             )
             
 
@@ -170,12 +185,23 @@ class BuildSystem:
         
         return arg_parser
         
-    def generate(self, args, input_path, output_path, pre_generate_fun = None):
+    def setup(self, arg_parser):
+        self.args = arg_parser.parse_args()
+        if self.args.log_output_file is not None:
+            fileLoggerhandler = logging.FileHandler(self.args.log_output_file)
+            fileLoggerhandler.setLevel(logging.INFO)
+            fileFormatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+            fileLoggerhandler.setFormatter(fileFormatter)
+            self.logger.addHandler(fileLoggerhandler)
+            
+        return self.args
+        
+    def generate(self, input_path, output_path, pre_generate_fun = None):
         """Calls CMake to generate build script
         
         Parameters
         ----------
-        args : argparse.Namespace 
+        self.args : argparse.Namespace 
             Parsed arguments.
         input_path : string 
             Path to folder where top CMakeLists.txt is located.
@@ -193,46 +219,46 @@ class BuildSystem:
 
         cmd = ['cmake']
         
-        if args.generator:
-            cmd.extend(['-G', args.generator])
+        if self.args.generator:
+            cmd.extend(['-G', self.args.generator])
 
-        cmd.append('-DCMAKE_BUILD_TYPE=' + args.profile)
-        cmd.append('-DCMAKE_CXX_STANDARD=' + str(args.cpp_standard))
+        cmd.append('-DCMAKE_BUILD_TYPE=' + self.args.profile)
+        cmd.append('-DCMAKE_CXX_STANDARD=' + str(self.args.cpp_standard))
 
-        if args.c_compiler:
-            cmd.append('-DCMAKE_C_COMPILER=' + str(args.c_compiler))
-        if args.cxx_compiler:
-            cmd.append('-DCMAKE_CXX_COMPILER=' + str(args.cxx_compiler))
+        if self.args.c_compiler:
+            cmd.append('-DCMAKE_C_COMPILER=' + str(self.args.c_compiler))
+        if self.args.cxx_compiler:
+            cmd.append('-DCMAKE_CXX_COMPILER=' + str(self.args.cxx_compiler))
             
-        if args.cmake_definitions is not None:
-            for cmake_def in args.cmake_definitions:
+        if self.args.cmake_definitions is not None:
+            for cmake_def in self.args.cmake_definitions:
                 cmd.append('-D' + cmake_def)
-        if args.test_include is not None:
-            cmd.append('-DADD_TARGET_TEST_TARGET_INCLUDE=' + args.test_include)
-        if args.test_exclude is not None:
-            cmd.append('-DADD_TARGET_TEST_TARGET_EXCLUDE=' + args.test_include)
+        if self.args.test_include is not None:
+            cmd.append('-DADD_TARGET_TEST_TARGET_INCLUDE=' + self.args.test_include)
+        if self.args.test_exclude is not None:
+            cmd.append('-DADD_TARGET_TEST_TARGET_EXCLUDE=' + self.args.test_include)
             
-        cmd.append('--log-level=' + str(args.cmake_log_level))
+        cmd.append('--log-level=' + str(self.args.cmake_log_level))
+        cmd.append('-DLOG_LEVEL=' + str(self.args.cmake_log_level))
 
-        if args.cmake_log_level == LogLevel.TRACE.name:
+        if self.args.cmake_log_level == LogLevel.TRACE.name:
             cmd.append('--log-context')
             cmd.append('--debug-output')
             cmd.append('--trace-expand')
         
-
-        if args.clean:
+        if self.args.clean:
             shutil.rmtree(output_path, ignore_errors=True)
             
         if not os.path.isdir(output_path):
             os.makedirs(output_path)
             
-        gtestArgs = self.gtest.getCmakeDefines(args)
-        cmd.extend(gtestArgs)
-        sanitizerArgs = self.sanitizer.getCmakeDefines(args)
-        cmd.extend(sanitizerArgs)
+        gtest_args = self.gtest.getCmakeDefines(self.args)
+        cmd.extend(gtest_args)
+        sanitizer_args = self.sanitizer.getCmakeDefines(self.args)
+        cmd.extend(sanitizer_args)
         
         if pre_generate_fun is not None:
-            if not pre_generate_fun(args, input_path, output_path, cmd):
+            if not pre_generate_fun(self.args, input_path, output_path, cmd):
                 return False
         
         cmd.append(input_path)
@@ -241,12 +267,12 @@ class BuildSystem:
         
         return return_code
 
-    def build(self, args, build_path):
+    def build(self, build_path):
         """Calls CMake to generate build script
         
         Parameters
         ----------
-        args : argparse.Namespace 
+        self.args : argparse.Namespace 
             Parsed arguments.
         build_path : string
             Output path
@@ -259,35 +285,36 @@ class BuildSystem:
         
         cmd = ['cmake', '--build', '.']
         
-        if args.target is not None:
-            cmd.extend(['--target', args.target])
+        if self.args.target is not None:
+            cmd.extend(['--target', self.args.target])
             
-        cmd.extend(['--config', args.profile])
+        cmd.extend(['--config', self.args.profile])
         return_code = Utils.run(cmd, build_path)
         
         return return_code
 
-    def runTest(self, args, output_path):
+    def runTests(self, output_path):
         cmd = ['ctest', '--verbose']
-        cmd.extend(['-C', args.profile])
+        cmd.extend(['-C', self.args.profile])
         return_code = Utils.run(cmd, output_path)
         
         return return_code
 
-    def run(self, args, input_path, output_path):
-        if not args.run_test_only:
-            generate_result = self.generate(args, input_path, output_path)
+
+    def run(self, input_path, output_path):
+        if not self.args.run_tests_only:
+            generate_result = self.generate(input_path, output_path)
             if generate_result != 0:
                 return False
-            if args.generate_only == True:
+            if self.args.generate_only == True:
                 return True
     
-            build_result = self.build(args, output_path)
+            build_result = self.build(output_path)
             if build_result != 0:
                 return False;
 
-        if args.run_test == True or args.run_test_only == True:
-            test_result = self.runTest(args, output_path)
+        if self.args.run_tests == True or self.args.run_tests_only == True:
+            test_result = self.runTests(output_path)
             if test_result != 0:
                 return False
 
@@ -300,5 +327,5 @@ class BuildSystem:
         if output_path is None:
             output_path = os.path.join(current_dir, 'output')
         arg_parser = self.get_argument_parser_items(app_name)
-        args = arg_parser.parse_args()
-        return self.run(args, input_path, output_path)
+        self.setup(arg_parser)
+        return self.run(input_path, output_path)

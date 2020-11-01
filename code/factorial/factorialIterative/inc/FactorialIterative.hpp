@@ -6,11 +6,11 @@
 class CFactorialIterative : public IFactorialInterface
 {
 public:
-	virtual ~CFactorialIterative() = default;
+    virtual ~CFactorialIterative() = default;
 
-	virtual unsigned int calc(unsigned int aIndex);
-	
-	virtual unsigned int calcFromFile(const std::filesystem::path& aPath);
+    virtual unsigned int calc(unsigned int aIndex);
+    
+    virtual unsigned int calcFromFile(const std::filesystem::path& aPath);
 };
 
 #endif // FACTORIAL_ITERATIVE_HPP_

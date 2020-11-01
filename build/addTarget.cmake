@@ -23,11 +23,13 @@
 #      PUBLIC_DEFINES "DEFINE_A" "DEFINE_AA=1" # - defines
 #   )
 ##################### </EXAMPLE> #######################
-
 # Set to 1 to print debug values
 if (NOT DEFINED ADD_TARGET_DEBUG)
     set(ADD_TARGET_DEBUG 1)
 endif ()
+
+
+set(CMAKE_MACOSX_RPATH "OFF")
 
 set(CONAN_CMAKE_FILE "${CMAKE_CURRENT_LIST_DIR}/conan.cmake") # set path to file
 
@@ -40,6 +42,10 @@ endif()
 include("${CONAN_CMAKE_FILE}") 
 include("${CMAKE_CURRENT_LIST_DIR}/gtestHelper.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/sanitizerHelper.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/logger.cmake")
+
+
+
 
 function(addGroupsInternal)
 
@@ -156,33 +162,33 @@ function(AddTargetInternal)
     CMake_parse_arguments(ADD_TARGET "${OPTIONAL_ARGUMENTS_PATTERN}" "${ONE_ARGUMENT_PATTERN}" "${MULTI_ARGUMENT_PATTERN}" ${ARGN} )
 
     if (ADD_TARGET_DEBUG)
-        message(STATUS "--------------------------------------------------------------")
-        message(STATUS "TARGET_NAME=${ADD_TARGET_TARGET_NAME}")
-        message(STATUS "TARGET_TYPE=${ADD_TARGET_TARGET_TYPE}")
-        message(STATUS "TARGET_DIR=${ADD_TARGET_TARGET_DIR}")
+        logDebug("--------------------------------------------------------------")
+        logDebug("TARGET_NAME=${ADD_TARGET_TARGET_NAME}")
+        logDebug("TARGET_TYPE=${ADD_TARGET_TARGET_TYPE}")
+        logDebug("TARGET_DIR=${ADD_TARGET_TARGET_DIR}")
         
-        message(STATUS "SRC=${ADD_TARGET_SRC}")
+        logDebug("SRC=${ADD_TARGET_SRC}")
         
-        message(STATUS "PUBLIC_INC_DIRS=${ADD_TARGET_PUBLIC_INC_DIRS}")
-        message(STATUS "PRIVATE_INC_DIRS=${ADD_TARGET_PRIVATE_INC_DIRS}")
+        logDebug("PUBLIC_INC_DIRS=${ADD_TARGET_PUBLIC_INC_DIRS}")
+        logDebug("PRIVATE_INC_DIRS=${ADD_TARGET_PRIVATE_INC_DIRS}")
         
-        message(STATUS "PUBLIC_LIBS=${ADD_TARGET_PUBLIC_LIBS}")
-        message(STATUS "PRIVATE_LIBS=${ADD_TARGET_PRIVATE_LIBS}")
+        logDebug("PUBLIC_LIBS=${ADD_TARGET_PUBLIC_LIBS}")
+        logDebug("PRIVATE_LIBS=${ADD_TARGET_PRIVATE_LIBS}")
         
-        message(STATUS "PUBLIC_DEFINES=${ADD_TARGET_PUBLIC_DEFINES}")
-        message(STATUS "PRIVATE_DEFINES=${ADD_TARGET_PRIVATE_DEFINES}")
+        logDebug("PUBLIC_DEFINES=${ADD_TARGET_PUBLIC_DEFINES}")
+        logDebug("PRIVATE_DEFINES=${ADD_TARGET_PRIVATE_DEFINES}")
         
-        message(STATUS "RESOURCES_TO_COPY_TO_EXE_DIR=${ADD_TARGET_RESOURCES_TO_COPY_TO_EXE_DIR}")
-        message(STATUS "RESOURCES_TO_COPY=${ADD_TARGET_RESOURCES_TO_COPY}")
+        logDebug("RESOURCES_TO_COPY_TO_EXE_DIR=${ADD_TARGET_RESOURCES_TO_COPY_TO_EXE_DIR}")
+        logDebug("RESOURCES_TO_COPY=${ADD_TARGET_RESOURCES_TO_COPY}")
         
-        message(STATUS "PUBLIC_LINK_OPTIONS=${ADD_TARGET_PUBLIC_LINK_OPTIONS}")
-        message(STATUS "PRIVATE_LINK_OPTIONS=${ADD_TARGET_PRIVATE_LINK_OPTIONS}")
+        logDebug("PUBLIC_LINK_OPTIONS=${ADD_TARGET_PUBLIC_LINK_OPTIONS}")
+        logDebug("PRIVATE_LINK_OPTIONS=${ADD_TARGET_PRIVATE_LINK_OPTIONS}")
         
-        message(STATUS "PUBLIC_COMPILE_OPTIONS=${ADD_TARGET_PUBLIC_COMPILE_OPTIONS}")
-        message(STATUS "PRIVATE_COMPILE_OPTIONS=${ADD_TARGET_PRIVATE_COMPILE_OPTIONS}")
+        logDebug("PUBLIC_COMPILE_OPTIONS=${ADD_TARGET_PUBLIC_COMPILE_OPTIONS}")
+        logDebug("PRIVATE_COMPILE_OPTIONS=${ADD_TARGET_PRIVATE_COMPILE_OPTIONS}")
         
-        message(STATUS "TEST_TARGET=${ADD_TARGET_TEST_TARGET}")
-        message(STATUS "--------------------------------------------------------------")
+        logDebug("TEST_TARGET=${ADD_TARGET_TEST_TARGET}")
+        logDebug("--------------------------------------------------------------")
     endif ()
     
     if (ADD_TARGET_TEST_TARGET)
@@ -306,90 +312,175 @@ function(AddTargetInternal)
         target_compile_options("${ADD_TARGET_TARGET_NAME}" PUBLIC "-fsanitize=undefined")
     endif()
 
+    set(RES_COPY_TO_EXE_DIR ${ADD_TARGET_RESOURCES_TO_COPY_TO_EXE_DIR})
+    set(RES_COPY ${ADD_TARGET_RESOURCES_TO_COPY})
+
     list(APPEND LIBS ${ADD_TARGET_PUBLIC_LIBS} ${ADD_TARGET_PRIVATE_LIBS})
+
+       list(APPEND ALL_LIBS "${LIBS}")
     foreach(LIB IN LISTS LIBS)
-        get_target_property(LIB_RESOURCES_TO_COPY_TO_EXE_DIR ${LIB} RESOURCES_TO_COPY_TO_EXE_DIR)
-        if (LIB_RESOURCES_TO_COPY_TO_EXE_DIR)
-            list(APPEND ADD_TARGET_RESOURCES_TO_COPY_TO_EXE_DIR ${LIB_RESOURCES_TO_COPY_TO_EXE_DIR})
-        endif()
-        get_target_property(LIB_RESOURCES_TO_COPY ${LIB} RESOURCES_TO_COPY)
-        if (LIB_RESOURCES_TO_COPY)
-            list(APPEND ADD_TARGET_RESOURCES_TO_COPY ${LIB_RESOURCES_TO_COPY})
-        endif()
+        list(APPEND RES_COPY_TO_EXE_DIR ${${LIB}_PROPERTY_RESOURCES_TO_COPY_TO_EXE_DIR})
+        list(APPEND RES_COPY ${${LIB}_PROPERTY_RESOURCES_TO_COPY})
+
+           list(APPEND ALL_LIBS ${${LIB}_PROPERTY_ALL_LIBS})
     endforeach()
 
-    if(NOT "${ADD_TARGET_TARGET_TYPE}" STREQUAL "INTERFACE")
-        set_target_properties(${ADD_TARGET_TARGET_NAME} PROPERTIES 
-            RESOURCES_TO_COPY_TO_EXE_DIR "${ADD_TARGET_RESOURCES_TO_COPY_TO_EXE_DIR}"
-            RESOURCES_TO_COPY "${ADD_TARGET_RESOURCES_TO_COPY}"
-            )
-    endif()
+       set(${ADD_TARGET_TARGET_NAME}_PROPERTY_RESOURCES_TO_COPY_TO_EXE_DIR "${RES_COPY_TO_EXE_DIR}" CACHE INTERNAL "Resource of ${ADD_TARGET_TARGET_NAME} to copy to exe dir" FORCE)
+       set(${ADD_TARGET_TARGET_NAME}_PROPERTY_RESOURCES_TO_COPY "${RES_COPY}" CACHE INTERNAL "Resource of ${ADD_TARGET_TARGET_NAME} to copy to given dir" FORCE)
+       set(${ADD_TARGET_TARGET_NAME}_PROPERTY_TARGET_DIR "${ADD_TARGET_TARGET_DIR}" CACHE INTERNAL "Path where target ${ADD_TARGET_TARGET_NAME} is defined." FORCE)
 
     if("${ADD_TARGET_TARGET_TYPE}" STREQUAL "EXE")
-        get_target_property(LIB_RESOURCES_TO_COPY_TO_EXE_DIR ${ADD_TARGET_TARGET_NAME} RESOURCES_TO_COPY_TO_EXE_DIR)
-        if (LIB_RESOURCES_TO_COPY_TO_EXE_DIR)
-            foreach(RES IN LISTS LIB_RESOURCES_TO_COPY_TO_EXE_DIR)
+        foreach(RES IN LISTS ${ADD_TARGET_TARGET_NAME}_PROPERTY_RESOURCES_TO_COPY_TO_EXE_DIR)
 
-                if (NOT EXISTS "${RES}")
-                    message(FATAL "Resource ${RES} not exists.")
-                else()
-                    if (IS_DIRECTORY "${RES}")
-                        get_filename_component(DIR_NAME "${RES}" NAME_WE)
-                        add_custom_command(TARGET ${ADD_TARGET_TARGET_NAME} POST_BUILD
-                            COMMAND ${CMAKE_COMMAND} -E copy_directory 
-                                "${RES}" 
-                                "$<TARGET_FILE_DIR:${ADD_TARGET_TARGET_NAME}>/${DIR_NAME}")  # copy_directory copies content without folder, so folder needs to be added to destination path
-                    else ()
-                        add_custom_command(TARGET ${ADD_TARGET_TARGET_NAME} POST_BUILD
-                            COMMAND ${CMAKE_COMMAND} -E copy
-                                "${RES}" 
-                                "$<TARGET_FILE_DIR:${ADD_TARGET_TARGET_NAME}>")  
+            if (NOT EXISTS "${RES}")
+                logError("Resource ${RES} not exists.")
+            else()
+                if (IS_DIRECTORY "${RES}")
+                    get_filename_component(DIR_NAME "${RES}" NAME_WE)
+                    add_custom_command(TARGET ${ADD_TARGET_TARGET_NAME} POST_BUILD
+                        COMMAND ${CMAKE_COMMAND} -E copy_directory 
+                            "${RES}" 
+                            "$<TARGET_FILE_DIR:${ADD_TARGET_TARGET_NAME}>/${DIR_NAME}")  # copy_directory copies content without folder, so folder needs to be added to destination path
+                else ()
+                    add_custom_command(TARGET ${ADD_TARGET_TARGET_NAME} POST_BUILD
+                        COMMAND ${CMAKE_COMMAND} -E copy
+                            "${RES}" 
+                            "$<TARGET_FILE_DIR:${ADD_TARGET_TARGET_NAME}>")  
 
-                    endif ()
                 endif ()
-            endforeach()
-        endif()
+            endif ()
+        endforeach()
 
-        get_target_property(LIB_RESOURCES_TO_COPY_WITH_DEST ${ADD_TARGET_TARGET_NAME} RESOURCES_TO_COPY)
-        if (LIB_RESOURCES_TO_COPY_WITH_DEST)
-            list(LENGTH LIB_RESOURCES_TO_COPY_WITH_DEST RES_LIST_LENGTH)
+        if (${ADD_TARGET_TARGET_NAME}_PROPERTY_RESOURCES_TO_COPY)
+            list(LENGTH ${ADD_TARGET_TARGET_NAME}_PROPERTY_RESOURCES_TO_COPY RES_LIST_LENGTH)
 
             math(EXPR CHECK_LENGTH "${RES_LIST_LENGTH}%3")
             if (NOT "${CHECK_LENGTH}" STREQUAL "0")
-                message(FATAL "Incorrect format of RESOURCES_TO_COPY values. Expected \"src TO dest\".")
+                logError("Incorrect format of RESOURCES_TO_COPY values. Expected \"src TO dest\".")
             endif ()
+
             foreach (KEYWORD_INDEX RANGE 1 ${RES_LIST_LENGTH} 3) # RANGE start stop step
 
                 math(EXPR INDEX "${KEYWORD_INDEX}-1")
-                list(GET LIB_RESOURCES_TO_COPY_WITH_DEST ${INDEX} SRC)
+                list(GET ${ADD_TARGET_TARGET_NAME}_PROPERTY_RESOURCES_TO_COPY ${INDEX} SRC)
 
-                list(GET LIB_RESOURCES_TO_COPY_WITH_DEST ${KEYWORD_INDEX} KEYWORD)
+                list(GET ${ADD_TARGET_TARGET_NAME}_PROPERTY_RESOURCES_TO_COPY ${KEYWORD_INDEX} KEYWORD)
 
                 math(EXPR DEST_INDEX "${KEYWORD_INDEX}+1")
-                list(GET LIB_RESOURCES_TO_COPY_WITH_DEST ${DEST_INDEX} DEST)
+                list(GET ${ADD_TARGET_TARGET_NAME}_PROPERTY_RESOURCES_TO_COPY ${DEST_INDEX} DEST)
 
                 if (NOT "${KEYWORD}" STREQUAL "TO")
-                    message(FATAL "Incorrect key for RESOURCES_TO_COPY in target: ${ADD_TARGET_TARGET_NAME} after item: ${SRC}")
+                    logError("Incorrect key for RESOURCES_TO_COPY in target: ${ADD_TARGET_TARGET_NAME} after item: ${SRC}")
                 endif()
                 if (IS_DIRECTORY "${SRC}")
                     get_filename_component(DIR_NAME "${SRC}" NAME_WE)
                     add_custom_command(TARGET ${ADD_TARGET_TARGET_NAME} POST_BUILD
+                        COMMAND ${CMAKE_COMMAND} -E make_directory "${DEST}/${DIR_NAME}"
                         COMMAND ${CMAKE_COMMAND} -E copy_directory 
                             "${SRC}" 
                             "${DEST}/${DIR_NAME}")  
                 else ()
                     add_custom_command(TARGET ${ADD_TARGET_TARGET_NAME} POST_BUILD
+                        COMMAND ${CMAKE_COMMAND} -E make_directory "${DEST}"
                         COMMAND ${CMAKE_COMMAND} -E copy
                             "${SRC}" 
                             "${DEST}")  
-
                 endif ()
 
             endforeach ()
         endif()
 
+        # copy dynanic libs 
+        foreach(LIB IN LISTS ${ADD_TARGET_TARGET_NAME}_PROPERTY_ALL_LIBS)
+            get_target_property(OUTPUT_TYPE ${LIB} TYPE)
+            if ("${OUTPUT_TYPE}" STREQUAL "SHARED_LIBRARY")
+                add_custom_command(TARGET ${ADD_TARGET_TARGET_NAME} POST_BUILD
+                    COMMAND ${CMAKE_COMMAND} -E copy
+                        "$<TARGET_FILE:${LIB}>" 
+                        "$<TARGET_FILE_DIR:${ADD_TARGET_TARGET_NAME}>")  
+            endif()
+        endforeach()
     endif()
-        
+endfunction()
+
+
+function(printTarget TARGET_NAME)
+    message(STATUS "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+
+    if (NOT TARGET ${TARGET_NAME})
+        logStatus("NO TARGET NAMED: ${TARGET_NAME}")
+        return()
+    endif()
+
+    logStatus("TARGET NAME: ${TARGET_NAME}")
+    get_target_property(OUTPUT_TYPE ${TARGET_NAME} TYPE)
+    logStatus("TARGET TYPE: ${OUTPUT_TYPE}")
+    logStatus("ROOT: ${${TARGET_NAME}_PROPERTY_TARGET_DIR}")
+
+    get_target_property(OUTPUT_SOURCES ${TARGET_NAME} SOURCES)
+    if (OUTPUT_SOURCES)
+        foreach(ITEM IN LISTS OUTPUT_SOURCES)
+            logStatus("SOURCES: ${ITEM}")
+        endforeach()
+    endif ()
+    
+    get_target_property(OUTPUT_INC_DIR ${TARGET_NAME} INCLUDE_DIRECTORIES)
+    if (OUTPUT_INC_DIR)
+        foreach(ITEM IN LISTS OUTPUT_INC_DIR)
+            logStatus("INCLUDE_DIRECTORIES: ${ITEM}")
+        endforeach()
+    endif ()
+    
+    get_target_property(OUTPUT_INT_INC_DIR ${TARGET_NAME} INTERFACE_INCLUDE_DIRECTORIES)
+    if (OUTPUT_INT_INC_DIR)
+        foreach(ITEM IN LISTS OUTPUT_INT_INC_DIR)
+            logStatus("INTERFACE_INCLUDE_DIRECTORIES: ${ITEM}")
+        endforeach()
+    endif ()
+    
+    get_target_property(OUTPUT_COMPILE_DEF ${TARGET_NAME} COMPILE_DEFINITIONS)
+    if (OUTPUT_COMPILE_DEF)
+        foreach(ITEM IN LISTS OUTPUT_COMPILE_DEF)
+            logStatus("COMPILE_DEFINITIONS: ${ITEM}")
+        endforeach()
+    endif ()
+    
+    get_target_property(OUTPUT_INT_COMPILE_DEF ${TARGET_NAME} INTERFACE_COMPILE_DEFINITIONS)
+    if (OUTPUT_INT_COMPILE_DEF)
+        foreach(ITEM IN LISTS OUTPUT_INT_COMPILE_DEF)
+            logStatus("COMPILE_DEFINITIONS: ${ITEM}")
+        endforeach()
+    endif ()
+    
+    get_target_property(OUTPUT_COMPILE_OPT ${TARGET_NAME} COMPILE_OPTIONS)
+    if (OUTPUT_COMPILE_OPT)
+        foreach(ITEM IN LISTS OUTPUT_COMPILE_OPT)
+            logStatus("COMPILE_OPTIONS: ${ITEM}")
+        endforeach()
+    endif ()
+    
+    get_target_property(OUTPUT_INT_COMPILE_OPT ${TARGET_NAME} INTERFACE_COMPILE_OPTIONS)
+    if (OUTPUT_INT_COMPILE_OPT)
+        foreach(ITEM IN LISTS OUTPUT_INT_COMPILE_OPT)
+            logStatus("INTERFACE_COMPILE_OPTIONS: ${ITEM}")
+        endforeach()
+    endif ()
+    
+    get_target_property(OUTPUT_LINK_OPT ${TARGET_NAME} LINK_OPTIONS)
+    if (OUTPUT_LINK_OPT)
+        foreach(ITEM IN LISTS OUTPUT_LINK_OPT)
+            logStatus("LINK_OPTIONS: ${ITEM}")
+        endforeach()
+    endif ()
+    
+    get_target_property(OUTPUT_INT_LINK_OPT ${TARGET_NAME} INTERFACE_LINK_OPTIONS)
+    if (OUTPUT_INT_LINK_OPT)
+        foreach(ITEM IN LISTS OUTPUT_INT_LINK_OPT)
+            logStatus("INTERFACE_LINK_OPTIONS: ${ITEM}")
+        endforeach()
+    endif ()
+
+    message(STATUS "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 endfunction()
 
 # \brief Creates target.
@@ -405,7 +496,7 @@ endfunction()
 # \param[in] PRIVATE_DEFINES Arguments to target_compile_definitions with PRIVATE visibility,
 macro(AddTarget)
 
-    AddTargetInternal(TARGET_DIR "${CMAKE_CURRENT_SOURCE_DIR}" ${ARGV})
+    AddTargetInternal(TARGET_DIR "${CMAKE_CURRENT_SOURCE_DIR}" TARGET_LINE "${CMAKE_CURRENT_LIST_LINE}" ${ARGV})
     
 endmacro()
 
@@ -422,6 +513,6 @@ endmacro()
 # \param[in] PRIVATE_DEFINES Arguments to target_compile_definitions with PRIVATE visibility,
 macro(AddTestTarget)
 
-    AddTargetInternal(TARGET_DIR "${CMAKE_CURRENT_SOURCE_DIR}" ${ARGV} TEST_TARGET)
+    AddTargetInternal(TARGET_DIR "${CMAKE_CURRENT_SOURCE_DIR}" TARGET_LINE "${CMAKE_CURRENT_LIST_LINE}" ${ARGV} TEST_TARGET)
     
 endmacro()
