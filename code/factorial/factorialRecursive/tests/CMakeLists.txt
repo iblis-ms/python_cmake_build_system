@@ -21,6 +21,7 @@ addTestTarget(
     PRIVATE_INC_DIRS "${INC}"
     PUBLIC_LIBS "FactorialInterface"
     RESOURCES_TO_COPY_TO_EXE_DIR "${RES_FILE}"
+    TARGET_OUTPUT_DIR "${CMAKE_BINARY_DIR}/tests/FactorialRecursiveTests"
     )
     
     

@@ -34,7 +34,7 @@ set(CMAKE_MACOSX_RPATH "OFF")
 set(CONAN_CMAKE_FILE "${CMAKE_CURRENT_LIST_DIR}/conan.cmake") # set path to file
 
 if(NOT EXISTS "${CONAN_CMAKE_FILE}") # if not exist, download it
-   message(STATUS "Downloading conan.cmake from https://github.com/conan-io/cmake-conan")
+   logStatus("Downloading conan.cmake from https://github.com/conan-io/cmake-conan")
    file(DOWNLOAD "https://github.com/conan-io/cmake-conan/raw/v0.15/conan.cmake"
                  "${CONAN_CMAKE_FILE}")
 endif()
@@ -135,6 +135,7 @@ function(AddTargetInternal)
         TARGET_NAME 
         TARGET_TYPE 
         TARGET_DIR
+        TARGET_OUTPUT_DIR
         ) 
         
     set(MULTI_ARGUMENT_PATTERN 
@@ -194,13 +195,13 @@ function(AddTargetInternal)
     if (ADD_TARGET_TEST_TARGET)
         if (ADD_TARGET_TEST_TARGET_INCLUDE)
             if (NOT "${ADD_TARGET_TARGET_NAME}" MATCHES "${ADD_TARGET_TEST_TARGET_INCLUDE}")
-                message(STATUS "Target ${ADD_TARGET_TARGET_NAME} doesn't match to regex: ${ADD_TARGET_TEST_TARGET_INCLUDE}, so the test target wouldn't be built.")
+                logStatus("Target ${ADD_TARGET_TARGET_NAME} doesn't match to regex: ${ADD_TARGET_TEST_TARGET_INCLUDE}, so the test target wouldn't be built.")
                 return()
             endif ()
         endif ()
         if (ADD_TARGET_TEST_TARGET_EXCLUDE)
             if ("${ADD_TARGET_TARGET_NAME}" MATCHES "${ADD_TARGET_TEST_TARGET_EXCLUDE}")
-                message(STATUS "Target ${ADD_TARGET_TARGET_NAME} matches to regex: ${ADD_TARGET_TEST_TARGET_EXCLUDE}, so the test target wouldn't be built.")
+                logStatus("Target ${ADD_TARGET_TARGET_NAME} matches to regex: ${ADD_TARGET_TEST_TARGET_EXCLUDE}, so the test target wouldn't be built.")
                 return()
             endif ()
         endif ()
@@ -223,10 +224,44 @@ function(AddTargetInternal)
     
     if ("${ADD_TARGET_TARGET_TYPE}" STREQUAL "EXE")
         add_executable("${ADD_TARGET_TARGET_NAME}" "${SRC}")
+        if (NOT DEFINED ADD_TARGET_TARGET_OUTPUT_DIR)
+            if (CMAKE_RUNTIME_OUTPUT_DIRECTORY)
+                # assume PDB in the same folder as exec. Not used CMAKE_PDB_OUTPUT_DIRECTORY 
+                set(ADD_TARGET_TARGET_OUTPUT_DIR "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
+            else()
+                set(ADD_TARGET_TARGET_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}")
+            endif ()
+        endif()
+        set_target_properties("${ADD_TARGET_TARGET_NAME}" PROPERTIES 
+            RUNTIME_OUTPUT_DIRECTORY "${ADD_TARGET_TARGET_OUTPUT_DIR}"
+            PDB_OUTPUT_DIRECTORY "${ADD_TARGET_TARGET_OUTPUT_DIR}")
+            
     elseif ("${ADD_TARGET_TARGET_TYPE}" STREQUAL "STATIC")
         add_library("${ADD_TARGET_TARGET_NAME}" STATIC "${SRC}")
+        if (NOT DEFINED ADD_TARGET_TARGET_OUTPUT_DIR)
+            if (CMAKE_ARCHIVE_OUTPUT_DIRECTORY)
+                set(ADD_TARGET_TARGET_OUTPUT_DIR "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}")
+            else()
+                set(ADD_TARGET_TARGET_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}")
+            endif ()
+        endif()
+        set_target_properties("${ADD_TARGET_TARGET_NAME}" PROPERTIES 
+            ARCHIVE_OUTPUT_DIRECTORY "${ADD_TARGET_TARGET_OUTPUT_DIR}"
+            PDB_OUTPUT_DIRECTORY "${ADD_TARGET_TARGET_OUTPUT_DIR}")
+        
     elseif ("${ADD_TARGET_TARGET_TYPE}" STREQUAL "SHARED")
         add_library("${ADD_TARGET_TARGET_NAME}" SHARED "${SRC}")
+        if (NOT DEFINED ADD_TARGET_TARGET_OUTPUT_DIR)
+            if (CMAKE_RUNTIME_OUTPUT_DIRECTORY)
+                # assume PDB in the same folder as exec. Not used CMAKE_PDB_OUTPUT_DIRECTORY 
+                set(ADD_TARGET_TARGET_OUTPUT_DIR "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
+            else()
+                set(ADD_TARGET_TARGET_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}")
+            endif ()
+        endif()
+        set_target_properties("${ADD_TARGET_TARGET_NAME}" PROPERTIES 
+            RUNTIME_OUTPUT_DIRECTORY "${ADD_TARGET_TARGET_OUTPUT_DIR}"
+            PDB_OUTPUT_DIRECTORY "${ADD_TARGET_TARGET_OUTPUT_DIR}")
     elseif ("${ADD_TARGET_TARGET_TYPE}" STREQUAL "INTERFACE")
         add_library("${ADD_TARGET_TARGET_NAME}" INTERFACE)
     else ()
@@ -275,9 +310,12 @@ function(AddTargetInternal)
             endif ()
         endif ()
         if (ADD_TARGET_TEST_SHELL_COMMAND)
-            add_test(NAME "${ADD_TARGET_TARGET_NAME}" COMMAND sh -c "${ADD_TARGET_TEST_COMMAND}" ${GTEST_ARGS_LIST} )
+           # add_test(NAME "${ADD_TARGET_TARGET_NAME}" COMMAND sh -c "${ADD_TARGET_TEST_COMMAND}" ${GTEST_ARGS_LIST} WORKING_DIRECTORY "${ADD_TARGET_TARGET_OUTPUT_DIR}")
+            add_test(NAME "${ADD_TARGET_TARGET_NAME}" COMMAND sh -c "${ADD_TARGET_TEST_COMMAND}" ${GTEST_ARGS_LIST} WORKING_DIRECTORY "$<TARGET_FILE_DIR:${ADD_TARGET_TARGET_NAME}>")
+            
         else()
-            add_test(NAME "${ADD_TARGET_TARGET_NAME}" COMMAND  "${ADD_TARGET_TEST_COMMAND}"   ${GTEST_ARGS_LIST})
+            #add_test(NAME "${ADD_TARGET_TARGET_NAME}" COMMAND "${ADD_TARGET_TEST_COMMAND}" ${GTEST_ARGS_LIST} WORKING_DIRECTORY "${ADD_TARGET_TARGET_OUTPUT_DIR}")
+            add_test(NAME "${ADD_TARGET_TARGET_NAME}" COMMAND "${ADD_TARGET_TEST_COMMAND}" ${GTEST_ARGS_LIST} WORKING_DIRECTORY "$<TARGET_FILE_DIR:${ADD_TARGET_TARGET_NAME}>")
         endif()
     endif()
     
@@ -291,7 +329,7 @@ function(AddTargetInternal)
                         BASIC_SETUP         # calls conan_basic_setup: https://docs.conan.io/en/latest/reference/generators/cmake.html
                         CMAKE_TARGETS       # to use modern CMake approach: target_* function
                         BUILD missing)      # build library if missing 
-        message(STATUS "Libraries taken via Conan.io: ${CONAN_TARGETS}")
+        logStatus("Libraries taken via Conan.io: ${CONAN_TARGETS}")
         target_link_libraries("${ADD_TARGET_TARGET_NAME}" PUBLIC  ${CONAN_TARGETS})
     endif()
     
@@ -317,12 +355,12 @@ function(AddTargetInternal)
 
     list(APPEND LIBS ${ADD_TARGET_PUBLIC_LIBS} ${ADD_TARGET_PRIVATE_LIBS})
 
-       list(APPEND ALL_LIBS "${LIBS}")
+    list(APPEND ALL_LIBS "${LIBS}")
     foreach(LIB IN LISTS LIBS)
         list(APPEND RES_COPY_TO_EXE_DIR ${${LIB}_PROPERTY_RESOURCES_TO_COPY_TO_EXE_DIR})
         list(APPEND RES_COPY ${${LIB}_PROPERTY_RESOURCES_TO_COPY})
 
-           list(APPEND ALL_LIBS ${${LIB}_PROPERTY_ALL_LIBS})
+        list(APPEND ALL_LIBS ${${LIB}_PROPERTY_ALL_LIBS})
     endforeach()
 
        set(${ADD_TARGET_TARGET_NAME}_PROPERTY_RESOURCES_TO_COPY_TO_EXE_DIR "${RES_COPY_TO_EXE_DIR}" CACHE INTERNAL "Resource of ${ADD_TARGET_TARGET_NAME} to copy to exe dir" FORCE)
@@ -405,7 +443,7 @@ endfunction()
 
 
 function(printTarget TARGET_NAME)
-    message(STATUS "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+    logStatus("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 
     if (NOT TARGET ${TARGET_NAME})
         logStatus("NO TARGET NAMED: ${TARGET_NAME}")
@@ -480,7 +518,7 @@ function(printTarget TARGET_NAME)
         endforeach()
     endif ()
 
-    message(STATUS "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+    logStatus("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 endfunction()
 
 # \brief Creates target.

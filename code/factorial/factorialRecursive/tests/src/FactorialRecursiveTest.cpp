@@ -89,7 +89,9 @@ INSTANTIATE_TEST_SUITE_P(Factorial_,// name of a test instance
 TEST(RecursiveTest, calcFromDir)
 {
     CFactorialRecursive factorial;
+    
     const std::filesystem::path path("recursive_dir");
+    
     ASSERT_EQ(factorial.calcFromFile(path), 720u);
     
 }
