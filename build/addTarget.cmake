@@ -30,6 +30,9 @@ endif ()
 
 
 set(CMAKE_MACOSX_RPATH "OFF")
+set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+
+include("${CMAKE_CURRENT_LIST_DIR}/logger.cmake")
 
 set(CONAN_CMAKE_FILE "${CMAKE_CURRENT_LIST_DIR}/conan.cmake") # set path to file
 
@@ -42,7 +45,6 @@ endif()
 include("${CONAN_CMAKE_FILE}") 
 include("${CMAKE_CURRENT_LIST_DIR}/gtestHelper.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/sanitizerHelper.cmake")
-include("${CMAKE_CURRENT_LIST_DIR}/logger.cmake")
 
 
 
@@ -129,6 +131,7 @@ function(AddTargetInternal)
 
     set(OPTIONAL_ARGUMENTS_PATTERN 
         TEST_TARGET
+        WIN_DLL_EXPORT_ALL_SYMBOLS
         )
     
     set(ONE_ARGUMENT_PATTERN 
@@ -189,6 +192,9 @@ function(AddTargetInternal)
         logDebug("PRIVATE_COMPILE_OPTIONS=${ADD_TARGET_PRIVATE_COMPILE_OPTIONS}")
         
         logDebug("TEST_TARGET=${ADD_TARGET_TEST_TARGET}")
+        
+        logDebug("WIN_DLL_EXPORT_ALL_SYMBOLS=${ADD_TARGET_WIN_DLL_EXPORT_ALL_SYMBOLS}")
+        
         logDebug("--------------------------------------------------------------")
     endif ()
     
@@ -259,9 +265,15 @@ function(AddTargetInternal)
                 set(ADD_TARGET_TARGET_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}")
             endif ()
         endif()
+        
         set_target_properties("${ADD_TARGET_TARGET_NAME}" PROPERTIES 
             RUNTIME_OUTPUT_DIRECTORY "${ADD_TARGET_TARGET_OUTPUT_DIR}"
             PDB_OUTPUT_DIRECTORY "${ADD_TARGET_TARGET_OUTPUT_DIR}")
+        
+        if (MSVC AND ADD_TARGET_WIN_DLL_EXPORT_ALL_SYMBOLS)
+            set_target_properties("${ADD_TARGET_TARGET_NAME}" PROPERTIES 
+                WINDOWS_EXPORT_ALL_SYMBOLS "1")
+        endif ()
     elseif ("${ADD_TARGET_TARGET_TYPE}" STREQUAL "INTERFACE")
         add_library("${ADD_TARGET_TARGET_NAME}" INTERFACE)
     else ()

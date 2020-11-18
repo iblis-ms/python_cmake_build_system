@@ -8,7 +8,6 @@ project(TestApp)
 include("${CMAKE_SOURCE_DIR}/../build/addTarget.cmake")
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-############################### CONAN releated part ########################################
 
 enable_testing()
 add_subdirectory(factorial)

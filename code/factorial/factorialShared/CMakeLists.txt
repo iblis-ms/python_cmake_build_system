@@ -12,6 +12,7 @@ addTarget(
         SRC "${SRC}"
         PUBLIC_INC_DIRS "${INTERFACE}"
         PUBLIC_LIBS "FactorialIterative" "FactorialRecursive"
+        WIN_DLL_EXPORT_ALL_SYMBOLS
 	)
 
 add_subdirectory(tests)

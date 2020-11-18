@@ -79,7 +79,7 @@ class Utils:
             if (output == '' or output == b'') and pol is not None:
                 break
             if output:
-                strLineWithNewLine = str(output, 'utf-8')
+                strLineWithNewLine = output.decode(errors='ignore')   # output.encode('utf-8')
                 line = strLineWithNewLine[:-1]
                 logger.info(line)
                 
