@@ -47,7 +47,12 @@ include("${CMAKE_CURRENT_LIST_DIR}/gtestHelper.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/sanitizerHelper.cmake")
 
 
+if (NOT DEFINED GLOBAL_COMPILE_OPTIONS)
 
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        set(GLOBAL_COMPILE_OPTIONS "-fPIC")
+    endif ()
+endif ()
 
 function(addGroupsInternal)
 
@@ -274,6 +279,7 @@ function(AddTargetInternal)
             set_target_properties("${ADD_TARGET_TARGET_NAME}" PROPERTIES 
                 WINDOWS_EXPORT_ALL_SYMBOLS "1")
         endif ()
+        
     elseif ("${ADD_TARGET_TARGET_TYPE}" STREQUAL "INTERFACE")
         add_library("${ADD_TARGET_TARGET_NAME}" INTERFACE)
     else ()
@@ -304,8 +310,8 @@ function(AddTargetInternal)
         target_link_options("${ADD_TARGET_TARGET_NAME}" PUBLIC "${ADD_TARGET_PUBLIC_LINK_OPTIONS}")
         target_link_options("${ADD_TARGET_TARGET_NAME}" PRIVATE "${ADD_TARGET_PRIVATE_LINK_OPTIONS}")
 
-        target_compile_options("${ADD_TARGET_TARGET_NAME}" PUBLIC "${ADD_TARGET_PUBLIC_COMPILE_OPTIONS}")
-        target_compile_options("${ADD_TARGET_TARGET_NAME}" PRIVATE "${ADD_TARGET_PRIVATE_COMPILE_OPTIONS}")
+        target_compile_options("${ADD_TARGET_TARGET_NAME}" PUBLIC "${ADD_TARGET_PUBLIC_COMPILE_OPTIONS}" "${GLOBAL_COMPILE_OPTIONS}")
+        target_compile_options("${ADD_TARGET_TARGET_NAME}" PRIVATE "${ADD_TARGET_PRIVATE_COMPILE_OPTIONS}" "${GLOBAL_COMPILE_OPTIONS}")
     endif()
     
     if (ADD_TARGET_TEST_TARGET)
