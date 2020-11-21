@@ -77,6 +77,8 @@ class BuildSystem:
         ArgumentParser
             Client side can append arguments
         """
+        
+        current_dir = os.getcwd()
         arg_parser = argparse.ArgumentParser(description=description)
         
         arg_parser.add_argument(
@@ -125,6 +127,14 @@ class BuildSystem:
             nargs="+", 
             type=str
             )
+        arg_parser.add_argument(
+            '-c_def',
+            '--c_definitions',
+            help='Definitions to C/C++.',
+            action="extend",
+            nargs="+", 
+            type=str
+            )
 
         cpp_std_choice = []
         for std in CppStandard:
@@ -167,7 +177,20 @@ class BuildSystem:
             help='Log output file'
             )
             
-
+        arg_parser.add_argument(
+            '-o',
+            '--output',
+            default = os.path.join(current_dir, 'output'),
+            help='Output folder'
+            )
+            
+        arg_parser.add_argument(
+            '-i',
+            '--input',
+            default = os.path.join(current_dir, 'code'),
+            help='Input folder'
+            )
+           
         log_level = []
         for lvl in LogLevel:
             log_level.append(lvl.value)
@@ -225,6 +248,11 @@ class BuildSystem:
         cmd.append('-DCMAKE_BUILD_TYPE=' + self.args.profile)
         cmd.append('-DCMAKE_CXX_STANDARD=' + str(self.args.cpp_standard))
 
+        if self.args.c_definitions:
+            c_def = ';'.join(self.args.c_definitions)
+            cmd.append('-DGLOBAL_COMPILE_DEFINES=' + c_def)
+            
+            print("!!!!!!!!!!!!!!!!!!!!!!!!: " + str(self.args.c_definitions))
         if self.args.c_compiler:
             cmd.append('-DCMAKE_C_COMPILER=' + str(self.args.c_compiler))
         if self.args.cxx_compiler:
@@ -301,7 +329,11 @@ class BuildSystem:
         return return_code
 
 
-    def run(self, input_path, output_path):
+    def run(self, input_path = None, output_path = None):
+        if input_path is None:
+            input_path = self.args.input
+        if output_path is None:
+            output_path = self.args.output
         if not self.args.run_tests_only:
             generate_result = self.generate(input_path, output_path)
             if generate_result != 0:
@@ -320,12 +352,8 @@ class BuildSystem:
 
         return True
 
-    def simpleRun(self, app_name, input_path = None, output_path = None):
-        current_dir = os.getcwd();
-        if input_path is None:
-            input_path = os.path.join(current_dir, 'code')
-        if output_path is None:
-            output_path = os.path.join(current_dir, 'output')
+    def simpleRun(self, app_name):
+        
         arg_parser = self.get_argument_parser_items(app_name)
         self.setup(arg_parser)
-        return self.run(input_path, output_path)
+        return self.run()

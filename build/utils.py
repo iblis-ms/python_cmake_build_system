@@ -39,7 +39,7 @@ class Utils:
         return True
             
     @staticmethod
-    def run(cmd, working_dir, env = None):
+    def run(cmd, working_dir, env = None, collect_output = False):
         """Runs given command in given working directory
         
         Parameters
@@ -72,6 +72,7 @@ class Utils:
                                 )
         logger.info("-------------------------------------- <output> -------------------------------------")
 
+        output_txt = ''
         while True:
             output = proc.stdout.readline()
             pol = proc.poll()
@@ -79,7 +80,9 @@ class Utils:
             if (output == '' or output == b'') and pol is not None:
                 break
             if output:
-                strLineWithNewLine = output.decode(errors='ignore')   # output.encode('utf-8')
+                strLineWithNewLine = output.decode(errors='ignore')
+                if collect_output:
+                    output_txt = output_txt + strLineWithNewLine
                 line = strLineWithNewLine[:-1]
                 logger.info(line)
                 
@@ -89,6 +92,8 @@ class Utils:
         logger.info("Return code: " + str(return_code))
         logger.info("####################################### </run> ######################################")
         
-        
-        return return_code
+        if collect_output:
+            return return_code, output_txt
+        else: 
+            return return_code
 

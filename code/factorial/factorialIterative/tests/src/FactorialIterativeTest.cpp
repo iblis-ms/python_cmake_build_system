@@ -94,5 +94,13 @@ TEST(IterativeTest, calcFromDir)
     const std::filesystem::path path("iterative_dir");
     ASSERT_EQ(factorial.calcFromFile(path), 720u);
     
+#ifdef TEST_MOMORY_LEAKS 
+    int* ptrMemoryLeakIterative = new int; // memory leak
+    int uninitializedIterative;
+    if (uninitializedIterative)
+    {
+		return;
+	}
+#endif 
 }
 

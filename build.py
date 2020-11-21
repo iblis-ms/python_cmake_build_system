@@ -4,10 +4,6 @@
 # License: MIT
 # ULR: https://github.com/iblis-ms/python_cmake_build_system
 
-import argparse
-import os
-import shutil
-import sys
 import build.buildSystem
    
 def main():
