@@ -17,9 +17,7 @@ class Utils:
     """
     Class that helps running CMake.
     """
-
-                
-                
+    
     @staticmethod
     def sysOp():
         if not hasattr(Utils, 'sysop'):

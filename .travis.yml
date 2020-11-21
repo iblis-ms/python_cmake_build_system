@@ -24,4 +24,4 @@ before_install:
 
 script:
 - if [ "$TRAVIS_OS_NAME" = "linux" ]; then docker run testimage /bin/bash -c "cd /test/app; ./travisTests.py" ; fi
-- if [ "$TRAVIS_OS_NAME" = "osx" ]; then ./build.py --clean -tests ; fi
+- if [ "$TRAVIS_OS_NAME" = "osx" ]; then python3 travisTests.py ; fi

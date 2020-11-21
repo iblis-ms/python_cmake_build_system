@@ -88,7 +88,6 @@ INSTANTIATE_TEST_SUITE_P(Factorial_,// name of a test instance
 
 TEST(RecursiveTest, calcFromDir)
 {
-	std::cout<<"calcFromDir calcFromDircalcFromDircalcFromDir MEMORY LEAK\n";
     CFactorialRecursive factorial;
     
     const std::filesystem::path path("recursive_dir");
@@ -96,13 +95,13 @@ TEST(RecursiveTest, calcFromDir)
     ASSERT_EQ(factorial.calcFromFile(path), 720u);
 
 #ifdef SANITIZER_ENABLE 
-	std::cout<<"SANITIZER_ENABLE enabled\n";
+    std::cout<<"SANITIZER_ENABLE enabled\n";
     int* ptrMemoryLeakRecursive = new int; // memory leak
     int uninitializedRecursive;
     if (uninitializedRecursive)
     {
-		return;
-	}
+        return;
+    }
 #endif 
 }
 
