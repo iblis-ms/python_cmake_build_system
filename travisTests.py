@@ -28,15 +28,17 @@ def linuxSanitizerAndDefines():
         '--clean',
         '--log_output_file', 'log.txt', 
         '--output',  os.path.join(current_dir, output),
-        '--sanitizer', 'memory_sanitizer',
-       # '--sanitizer', 'memory_sanitizer',
-        #'--sanitizer', 'address_sanitizer',
-        '--c_definitions', 'TEST_MOMORY_LEAKS=1']
+       '--sanitizer', 'address_sanitizer',
+        '--c_definitions', 'SANITIZER_ENABLE=1']
     
-    return_code = Utils.run(cmd, current_dir)
+    return_code, output_txt = Utils.run(cmd, current_dir, collect_output = True)
     if return_code != 0:
         return False
         
+    if not 'ERROR: LeakSanitizer: detected memory leaks' in output_txt:
+        logger.error("Memory leak wasn't detected. Memory sanitizer wasn't run or define to enable memory leak wasn't passed to code.")
+        return False
+         
     logger.info("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
     return True
 
@@ -100,7 +102,9 @@ def main():
     logger.addHandler(consoleLoggerhandler)
     logger.setLevel(logging.INFO)
     
-   # res = linuxAll();
+    res = linuxAll()
+    if not res:
+        return False;
     res = linuxSanitizerAndDefines()
     
     return res

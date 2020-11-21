@@ -94,9 +94,9 @@ TEST(RecursiveTest, calcFromDir)
     const std::filesystem::path path("recursive_dir");
     
     ASSERT_EQ(factorial.calcFromFile(path), 720u);
-    #if 0
-#ifdef TEST_MOMORY_LEAKS 
-	std::cout<<"BEFORE MEMORY LEAK\n";
+
+#ifdef SANITIZER_ENABLE 
+	std::cout<<"SANITIZER_ENABLE enabled\n";
     int* ptrMemoryLeakRecursive = new int; // memory leak
     int uninitializedRecursive;
     if (uninitializedRecursive)
@@ -104,6 +104,5 @@ TEST(RecursiveTest, calcFromDir)
 		return;
 	}
 #endif 
-    #endif 
 }
 
