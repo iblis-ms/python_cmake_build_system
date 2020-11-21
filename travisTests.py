@@ -19,7 +19,7 @@ def linuxSanitizerAndDefines():
 
     output = 'output_sanitizer' 
     
-    cmd = ['./build.py', '--profile', profile, 
+    cmd = ['python3', 'build.py', '--profile', profile, 
         '--generator', generator, 
         '--c_compiler', compiler[0], 
         '--cxx_compiler', compiler[1], 
@@ -59,7 +59,7 @@ def linuxAll():
                     buf = generator
                     output = 'output_' + profile + '_' + re.sub(' ', '_', generator) + '_' + re.sub(' ', '_', compiler[0]) + '_' + re.sub(' ', '_', compiler[1]) + '_' + cpp_standard
                     
-                    cmd = ['./build.py', '--profile', profile, 
+                    cmd = ['python3', 'build.py', '--profile', profile, 
                         '--generator', generator, 
                         '--c_compiler', compiler[0], 
                         '--cxx_compiler', compiler[1], 
@@ -111,7 +111,7 @@ def macosAll():
                     buf = generator
                     output = 'output_' + profile + '_' + re.sub(' ', '_', generator) + '_' + re.sub(' ', '_', compiler[0]) + '_' + re.sub(' ', '_', compiler[1]) + '_' + cpp_standard
                     
-                    cmd = ['./build.py', '--profile', profile, 
+                    cmd = ['python3', 'build.py', '--profile', profile, 
                         '--generator', generator, 
                         '--c_compiler', compiler[0], 
                         '--cxx_compiler', compiler[1], 
