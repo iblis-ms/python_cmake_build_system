@@ -19,6 +19,7 @@ compiler:
 before_install:
 - if [ "$TRAVIS_OS_NAME" = "linux" ]; then docker build -t testimage . ; fi
 - pip3 install requests
+- pip3 install conan
 
 
 
