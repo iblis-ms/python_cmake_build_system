@@ -1,3 +1,7 @@
+# Author: Marcin Serwach
+# License: MIT
+# ULR: https://github.com/iblis-ms/python_cmake_build_system
+# 
 
 set(LOG_LEVEL_ERROR 0)
 set(LOG_LEVEL_WARNING 10)
@@ -113,3 +117,43 @@ endmacro()
 macro(logLineInfo LINE TXT)
     logLineInternal(LOG_LEVEL_INFO STATUS "${CMAKE_CURRENT_LIST_FILE}" "${LINE}" "${TXT}")
 endmacro()
+
+########################################################################
+
+function(logListInternal LOG_LEVEL LIST_TO_PRINT HEADER LINE_PREFIX)
+    if (LIST_TO_PRINT)
+        if (HEADER)
+            logInternal("${LOG_LEVEL}" STATUS "${CMAKE_CURRENT_LIST_FILE}" "${HEADER}")
+        endif ()
+        foreach(ITEM IN LISTS ${LIST_TO_PRINT})
+            if (ITEM)
+                logInternal("${LOG_LEVEL}" STATUS "${CMAKE_CURRENT_LIST_FILE}" "${LINE_PREFIX} ${ITEM}")
+            endif()
+        endforeach()
+    endif()
+endfunction()
+
+function(logListError LIST_TO_PRINT HEADER LINE_PREFIX)
+    logListInternal(LOG_LEVEL_ERROR ${LIST_TO_PRINT} ${HEADER} ${LINE_PREFIX})
+endfunction()
+
+function(logListWarning LIST_TO_PRINT HEADER LINE_PREFIX)
+    logListInternal(LOG_LEVEL_WARNING ${LIST_TO_PRINT} ${HEADER} ${LINE_PREFIX})
+endfunction()
+
+function(logListNotice LIST_TO_PRINT HEADER LINE_PREFIX)
+    logListInternal(LOG_LEVEL_NOTICE ${LIST_TO_PRINT} ${HEADER} ${LINE_PREFIX})
+endfunction()
+
+function(logListStatus LIST_TO_PRINT HEADER LINE_PREFIX)
+    logListInternal(LOG_LEVEL_STATUS ${LIST_TO_PRINT} ${HEADER} ${LINE_PREFIX})
+endfunction()
+
+function(logListDebug LIST_TO_PRINT HEADER LINE_PREFIX)
+    logListInternal(LOG_LEVEL_DEBUG ${LIST_TO_PRINT} ${HEADER} ${LINE_PREFIX})
+endfunction()
+
+function(logListInfo LIST_TO_PRINT HEADER LINE_PREFIX)
+    logListInternal(LOG_LEVEL_INFO ${LIST_TO_PRINT} ${HEADER} ${LINE_PREFIX})
+endfunction()
+

@@ -1,3 +1,6 @@
+# Author: Marcin Serwach
+# License: MIT
+# ULR: https://github.com/iblis-ms/python_cmake_build_system
 
 set(SRC_TEST
     "${CMAKE_CURRENT_SOURCE_DIR}/src/FactorialFactoryIterativeTest.cpp"

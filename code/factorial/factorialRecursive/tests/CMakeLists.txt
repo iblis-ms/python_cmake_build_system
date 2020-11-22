@@ -1,3 +1,6 @@
+# Author: Marcin Serwach
+# License: MIT
+# ULR: https://github.com/iblis-ms/python_cmake_build_system
 
 set(SRC_TEST
     "${CMAKE_CURRENT_SOURCE_DIR}/src/FactorialFactoryRecursiveTest.cpp"
@@ -24,12 +27,3 @@ addTestTarget(
     TARGET_OUTPUT_DIR "${CMAKE_BINARY_DIR}/tests/FactorialRecursiveTests"
     )
     
-    
-    
-#set_target_properties("FactorialRecursiveTest" PROPERTIES RUNTIME_OUTPUT_DIRECTORY "/Users/iblis/workspaces/tracked/python_cmake_build_system/output")
-
-# ARCHIVE_OUTPUT_DIRECTORY
-# COMPILE_PDB_OUTPUT_DIRECTORY
-# LIBRARY_OUTPUT_DIRECTORY
-# PDB_OUTPUT_DIRECTORY
-# RUNTIME_OUTPUT_DIRECTORY

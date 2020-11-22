@@ -1,5 +1,9 @@
 #!/usr/bin/python3 
 
+# Author: Marcin Serwach
+# License: MIT
+# ULR: https://github.com/iblis-ms/python_cmake_build_system
+
 from build.utils import Utils
 import os
 import re
@@ -92,8 +96,6 @@ def linuxAll():
              
     return True
 
-
-
 def macosAll():
     current_dir = os.getcwd()
     logger = logging.getLogger("BuildSystem")
@@ -148,6 +150,64 @@ def macosAll():
                     logger.info("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
              
     return True
+    
+
+def windowsAll():
+    current_dir = os.getcwd()
+    logger = logging.getLogger("BuildSystem")
+    
+    profiles = ['Release', 'Debug']
+    generators = ['Unix Makefiles', 'Xcode']
+    compilers = [['gcc', 'g++'], ['clang', 'clang++']]
+    cpp_standards = ['17', '20']
+    
+    for profile in profiles:
+        for generator in generators:
+            for compiler in compilers:
+                for cpp_standard in cpp_standards:
+                    logger.info("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+                    buf = generator
+                    output = 'output_' + profile + '_' + re.sub(' ', '_', generator) + '_' + re.sub(' ', '_', compiler[0]) + '_' + re.sub(' ', '_', compiler[1]) + '_' + cpp_standard
+                    
+                    cmd = ['python3', 'build.py', '--profile', profile, 
+                        '--generator', generator, 
+                        '--c_compiler', compiler[0], 
+                        '--cxx_compiler', compiler[1], 
+                        '--cpp_standard', cpp_standard, 
+                        '--run_tests', 
+                        '--clean',
+                        '--log_output_file', 'log.txt', 
+                        '--output',  os.path.join(current_dir, 'output', output)]
+                    
+                    return_code = Utils.run(cmd, current_dir)
+                    if return_code != 0:
+                        return False
+                        
+                    if generator == "Xcode":
+                        fileArg = os.path.join(current_dir, 'output', output, 'factorial', 'factorialExeShared', profile, 'FactorialShared')
+                    else:
+                        fileArg = os.path.join(current_dir, 'output', output, 'factorial', 'factorialExeShared', 'FactorialShared')
+                    cmd = ['nm', fileArg, ]
+                    return_code, output_txt = Utils.run(cmd, current_dir, collect_output = True)
+                    if return_code != 0:
+                        return False
+                        
+                    lines = output_txt.count('\n')
+                  
+                    if profile == 'Release':
+                        if lines > 60:
+                            logger.error("File: " + str(fileArg) + " has debug symbols, but it shouldn't have them in Release mode")
+                            return False
+                    else:
+                        if lines <= 60:
+                            logger.error("File: " + str(fileArg) + " hasn't debug symbols, but it sould have them in Debug mode")
+                            return False
+                        
+                    logger.info("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+             
+    return True
+    
+
 def main():
     current_dir = os.getcwd()
     logger = logging.getLogger("BuildSystem")

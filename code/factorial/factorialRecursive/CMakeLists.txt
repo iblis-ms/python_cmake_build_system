@@ -1,3 +1,7 @@
+# Author: Marcin Serwach
+# License: MIT
+# ULR: https://github.com/iblis-ms/python_cmake_build_system
+
 set(SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/src/FactorialFactoryRecursive.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/FactorialRecursive.cpp"
@@ -23,14 +27,14 @@ set(RES_COPY
     )
 
 addTarget(
-        TARGET_NAME "FactorialRecursive"
-        TARGET_TYPE "STATIC"
-        SRC "${SRC}"
-        PUBLIC_INC_DIRS "${INTERFACE}"
-        PRIVATE_INC_DIRS "${INC}"
-        PUBLIC_LIBS "FactorialInterface"
-        RESOURCES_TO_COPY_TO_EXE_DIR "${RES_COPY_TO_EXE_DIR}"
-        RESOURCES_TO_COPY "${RES_COPY}"
+    TARGET_NAME "FactorialRecursive"
+    TARGET_TYPE "STATIC"
+    SRC "${SRC}"
+    PUBLIC_INC_DIRS "${INTERFACE}"
+    PRIVATE_INC_DIRS "${INC}"
+    PUBLIC_LIBS "FactorialInterface"
+    RESOURCES_TO_COPY_TO_EXE_DIR "${RES_COPY_TO_EXE_DIR}"
+    RESOURCES_TO_COPY "${RES_COPY}"
     )
 
 add_subdirectory(tests)

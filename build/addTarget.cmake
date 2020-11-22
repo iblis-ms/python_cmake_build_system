@@ -1,6 +1,6 @@
 # Author: Marcin Serwach
 # License: MIT
-# ULR: https://github.com/iblis-ms/cmake_add_target
+# ULR: https://github.com/iblis-ms/python_cmake_build_system
 # 
 # AddTarget simpliefies adding targets in CMake. For example:
 ##################### <EXAMPLE> ########################
@@ -23,6 +23,7 @@
 #      PUBLIC_DEFINES "DEFINE_A" "DEFINE_AA=1" # - defines
 #   )
 ##################### </EXAMPLE> #######################
+
 # Set to 1 to print debug values
 if (NOT DEFINED ADD_TARGET_DEBUG)
     set(ADD_TARGET_DEBUG 1)
@@ -54,6 +55,11 @@ if (NOT DEFINED GLOBAL_INTERNAL_COMPILE_OPTIONS)
     endif ()
 endif ()
 
+# \brief Creates CMake groups based on folder structure. It only creates groups from folders passing recoursively and returning files that have one of given extensions.
+# \param[in] ROOT_PATH Path to location which will be the root of mapping folder to groups,
+# \param[out] OUTPUT_FILES Output variable with the given name will be a list of files that have one of given extensions,
+# \param[in] PATHS_TO_DIRS Path to locations where recoursive walk shall start,
+# \param[in] EXTENSIONS Extensions. Files that have one of given exention will be returned in a list with name given OUTPUT_FILES argument.
 function(addGroupsInternal)
 
     set(OPTIONAL_ARGUMENTS_PATTERN 
@@ -97,6 +103,9 @@ function(addGroupsInternal)
 endfunction()
 
 
+# \brief Creates CMake groups based on folder structure. It only creates groups from folders where given source files are located. It doesn't go recoursively into folder structures (like function addGroupsInternal).
+# \param[in] ROOT_PATH Path to location which will be the root of mapping folder to groups,
+# \param[in] PATHS_TO_SRCS Path to source file. Their folder (paths) will be mapped to CMake groups.
 function(addSrcGroupsInternal)
     set(OPTIONAL_ARGUMENTS_PATTERN 
         )
@@ -119,19 +128,26 @@ function(addSrcGroupsInternal)
     endforeach()
 endfunction()
 
-
-
 # \brief Creates target.
-# \param[in] TARGET_NAME Target name
-# \param[in] TARGET_TYPE Target type: EXE for executable, STATIC for static library, SHARED for shared library, INTERFACE for headers only library
-# \param[in] TARGET_DIR Path to directory where target is defined
-# \param[in] SRC Source files
+# \param[in] TEST_TARGET Indicates if target is a test target (internal use only),
+# \param[in] WIN_DLL_EXPORT_ALL_SYMBOLS Windows: Indicates if all DLL symbols shall be exported,
+# \param[in] TARGET_NAME Target name,
+# \param[in] TARGET_TYPE Target type: EXE for executable, STATIC for static library, SHARED for shared library, INTERFACE for headers only library,
+# \param[in] TARGET_DIR Path to directory where target is defined,
+# \param[in] TARGET_OUTPUT_DIR Path where built file be located,
+# \param[in] SRC Source files,
 # \param[in] PUBLIC_INC_DIRS Arguments to target_include_directories with PUBLIC/INTERFACE visibility,
 # \param[in] PRIVATE_INC_DIRS Arguments to target_include_directories with PRIVATE visibility,
 # \param[in] PUBLIC_LIBS Arguments to target_link_libraries with PUBLIC/INTERFACE visibility,
 # \param[in] PRIVATE_LIBS Arguments to target_link_libraries with PRIVATE visibility,
 # \param[in] PUBLIC_DEFINES Arguments to target_compile_definitions with PUBLIC/INTERFACE visibility,
 # \param[in] PRIVATE_DEFINES Arguments to target_compile_definitions with PRIVATE visibility,
+# \param[in] RESOURCES_TO_COPY_TO_EXE_DIR Resources that shall be copied to all executable target file location that link this target,
+# \param[in] RESOURCES_TO_COPY Similar to RESOURCES_TO_COPY_TO_EXE_DIR, but resources that shall be copied to given location. Format: source_path TO dest_path,
+# \param[in] PUBLIC_LINK_OPTIONS Linker arguments with PUBLIC visibility,
+# \param[in] PUBLIC_LINK_OPTIONS Linker arguments with PRIVATE visibility,
+# \param[in] PUBLIC_COMPILE_OPTIONS Compiler arguments with PUBLIC visibility,
+# \param[in] PRIVATE_COMPILE_OPTIONS Compiler arguments with PRIVATE visibility.
 function(AddTargetInternal)
 
     set(OPTIONAL_ARGUMENTS_PATTERN 
@@ -203,13 +219,15 @@ function(AddTargetInternal)
         logDebug("--------------------------------------------------------------")
     endif ()
     
-    if (ADD_TARGET_TEST_TARGET)
+    if (ADD_TARGET_TEST_TARGET) # only test targets can be excluded/include by match pattern via this script.
         if (ADD_TARGET_TEST_TARGET_INCLUDE)
+            # check if include match pattern was defined and this target match to the pattern. If not match, don't create the target.
             if (NOT "${ADD_TARGET_TARGET_NAME}" MATCHES "${ADD_TARGET_TEST_TARGET_INCLUDE}")
                 logStatus("Target ${ADD_TARGET_TARGET_NAME} doesn't match to regex: ${ADD_TARGET_TEST_TARGET_INCLUDE}, so the test target wouldn't be built.")
                 return()
             endif ()
         endif ()
+        # check if exclude match pattern was defined and this target match to the pattern. If match, don't create the target.
         if (ADD_TARGET_TEST_TARGET_EXCLUDE)
             if ("${ADD_TARGET_TARGET_NAME}" MATCHES "${ADD_TARGET_TEST_TARGET_EXCLUDE}")
                 logStatus("Target ${ADD_TARGET_TARGET_NAME} matches to regex: ${ADD_TARGET_TEST_TARGET_EXCLUDE}, so the test target wouldn't be built.")
@@ -218,26 +236,32 @@ function(AddTargetInternal)
         endif ()
     endif ()
 
+    # create groups for header files and collect all header (some IDEs like Visual Studio requires to have source file with header file in add_library/add_executable to have them visible).
+    # public header file directories.
     addGroupsInternal(ROOT_PATH "${ADD_TARGET_TARGET_DIR}" 
         PATHS_TO_DIRS "${ADD_TARGET_PUBLIC_INC_DIRS}" 
         EXTENSIONS "hpp" "h"
-        OUTPUT_FILES PUBLIC_INCS_TO_SRC)
+        OUTPUT_FILES PUBLIC_INCS_TO_SRC) # found header files will be in PUBLIC_INCS_TO_SRC variable.
         
+    # private header file directories.
     addGroupsInternal(ROOT_PATH "${ADD_TARGET_TARGET_DIR}" 
         PATHS_TO_DIRS "${ADD_TARGET_PRIVATE_INC_DIRS}" 
         EXTENSIONS "hpp" "h"
-        OUTPUT_FILES PRIVATE_INCS_TO_SRC)
+        OUTPUT_FILES PRIVATE_INCS_TO_SRC) # found header files will be in PRIVATE_INCS_TO_SRC variable.
    
+    # create groups from source files.
     addSrcGroupsInternal(ROOT_PATH "${ADD_TARGET_TARGET_DIR}" 
         PATHS_TO_SRCS "${ADD_TARGET_SRC}")
         
     set(SRC "${ADD_TARGET_SRC}" "${PUBLIC_INCS_TO_SRC}" "${PRIVATE_INCS_TO_SRC}")
     
     if ("${ADD_TARGET_TARGET_TYPE}" STREQUAL "EXE")
+        # create executable target.
         add_executable("${ADD_TARGET_TARGET_NAME}" "${SRC}")
+        # set output directory for built target.
         if (NOT DEFINED ADD_TARGET_TARGET_OUTPUT_DIR)
             if (CMAKE_RUNTIME_OUTPUT_DIRECTORY)
-                # assume PDB in the same folder as exec. Not used CMAKE_PDB_OUTPUT_DIRECTORY 
+                # assume PDB in the same folder as exec. Not used CMAKE_PDB_OUTPUT_DIRECTORY .
                 set(ADD_TARGET_TARGET_OUTPUT_DIR "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
             else()
                 set(ADD_TARGET_TARGET_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}")
@@ -248,7 +272,9 @@ function(AddTargetInternal)
             PDB_OUTPUT_DIRECTORY "${ADD_TARGET_TARGET_OUTPUT_DIR}")
             
     elseif ("${ADD_TARGET_TARGET_TYPE}" STREQUAL "STATIC")
+        # create static library target.
         add_library("${ADD_TARGET_TARGET_NAME}" STATIC "${SRC}")
+        # set output directory for built target.
         if (NOT DEFINED ADD_TARGET_TARGET_OUTPUT_DIR)
             if (CMAKE_ARCHIVE_OUTPUT_DIRECTORY)
                 set(ADD_TARGET_TARGET_OUTPUT_DIR "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}")
@@ -261,7 +287,9 @@ function(AddTargetInternal)
             PDB_OUTPUT_DIRECTORY "${ADD_TARGET_TARGET_OUTPUT_DIR}")
         
     elseif ("${ADD_TARGET_TARGET_TYPE}" STREQUAL "SHARED")
+        # create static library target.
         add_library("${ADD_TARGET_TARGET_NAME}" SHARED "${SRC}")
+        # set output directory for built target.
         if (NOT DEFINED ADD_TARGET_TARGET_OUTPUT_DIR)
             if (CMAKE_RUNTIME_OUTPUT_DIRECTORY)
                 # assume PDB in the same folder as exec. Not used CMAKE_PDB_OUTPUT_DIRECTORY 
@@ -276,17 +304,20 @@ function(AddTargetInternal)
             PDB_OUTPUT_DIRECTORY "${ADD_TARGET_TARGET_OUTPUT_DIR}")
         
         if (MSVC AND ADD_TARGET_WIN_DLL_EXPORT_ALL_SYMBOLS)
+            # Microsoft Visual Studio: if WIN_DLL_EXPORT_ALL_SYMBOLS was provided, all symbols from DLL will be visible. 
             set_target_properties("${ADD_TARGET_TARGET_NAME}" PROPERTIES 
                 WINDOWS_EXPORT_ALL_SYMBOLS "1")
         endif ()
         
     elseif ("${ADD_TARGET_TARGET_TYPE}" STREQUAL "INTERFACE")
+        # create interface library target.
         add_library("${ADD_TARGET_TARGET_NAME}" INTERFACE)
     else ()
         message(FATAL_ERROR " Incorrect TARGET_TYPE=${ADD_TARGET_TARGET_TYPE} for TARGET_NAME=${ADD_TARGET_TARGET_NAME} from location ${ADD_TARGET_TARGET_DIR}")
     endif ()
     
     if ("${ADD_TARGET_TARGET_TYPE}" STREQUAL "INTERFACE")
+        # interface target has its own token INTERFACE for target commands.
         target_include_directories("${ADD_TARGET_TARGET_NAME}" INTERFACE "${ADD_TARGET_PUBLIC_INC_DIRS}")
         
         target_link_libraries("${ADD_TARGET_TARGET_NAME}" INTERFACE "${ADD_TARGET_PUBLIC_LIBS}")
@@ -316,14 +347,18 @@ function(AddTargetInternal)
     
     if (ADD_TARGET_TEST_TARGET)
         set(ADD_TARGET_TEST_COMMAND "${ADD_TARGET_TARGET_NAME}")
+        
+        # check if user provided a spectial function to define test and test command.
         if (COMMAND addTargetTestRunCommand)
             AddTargetTestRunCommand("${ADD_TARGET_TARGET_NAME}")
         else()
             if (ADD_TARGET_VALGRIND)
+                # if tests shall be run with valgrind
                 AddTargetTestRunCommand_Valgrind("${ADD_TARGET_TARGET_NAME}")
             endif ()
 
             if (ADD_TARGET_DR_MEMORY)
+                # if tests shall be run with dr memory
                 AddTargetTestRunCommand_DrMemory("${ADD_TARGET_TARGET_NAME}")
             endif ()
         endif ()
@@ -335,6 +370,8 @@ function(AddTargetInternal)
         endif()
     endif()
     
+    # CONAN PART.
+    # Download/build targets defined in conanfile.txt.
     set(CONAN_FILE_PATH "${ADD_TARGET_TARGET_DIR}/conanfile.txt")
     if (EXISTS "${CONAN_FILE_PATH}")
         file(RELATIVE_PATH CONAN_FILE_RELATIVE_PATH "${CMAKE_CURRENT_SOURCE_DIR}" "${CONAN_FILE_PATH}") # conan_cmake_run requires relative path
@@ -350,6 +387,7 @@ function(AddTargetInternal)
     endif()
     
     if (NOT "${ADD_TARGET_TARGET_TYPE}" STREQUAL "INTERFACE")
+        # add compiler and linker flags required by sanitizers.
         if (ADD_TARGET_CLANG_ADDRESS_SANITIZER)
             target_link_options("${ADD_TARGET_TARGET_NAME}" PUBLIC "-fsanitize=address" "-fno-omit-frame-pointer")
             target_compile_options("${ADD_TARGET_TARGET_NAME}" PUBLIC "-fsanitize=address" "-fno-omit-frame-pointer")
@@ -368,24 +406,33 @@ function(AddTargetInternal)
         endif ()
     endif ()
 
+    # RESOURCE PART.
+    # RES_COPY_TO_EXE_DIR will contain all resources, that shall be copied to executable location which links this target. Moreover it will contant all resources from target that are linked to this target - recoursive accumulation.
     set(RES_COPY_TO_EXE_DIR ${ADD_TARGET_RESOURCES_TO_COPY_TO_EXE_DIR})
+    # similar case as RES_COPY_TO_EXE_DIR but all resources have destination point.
     set(RES_COPY ${ADD_TARGET_RESOURCES_TO_COPY})
 
     list(APPEND LIBS ${ADD_TARGET_PUBLIC_LIBS} ${ADD_TARGET_PRIVATE_LIBS})
 
     list(APPEND ALL_LIBS "${LIBS}")
     foreach(LIB IN LISTS LIBS)
+        # collect resources from target that are linked to this target.
         list(APPEND RES_COPY_TO_EXE_DIR ${${LIB}_PROPERTY_RESOURCES_TO_COPY_TO_EXE_DIR})
         list(APPEND RES_COPY ${${LIB}_PROPERTY_RESOURCES_TO_COPY})
-
+        # there is no CMake support to collect all libraries linked to given target, so it would be done by definition of ${TARGET_NAME}_PROPERTY_ALL_LIBS.
+        # This variable will be used to copy all DLL to executable file location.
         list(APPEND ALL_LIBS ${${LIB}_PROPERTY_ALL_LIBS})
     endforeach()
 
-       set(${ADD_TARGET_TARGET_NAME}_PROPERTY_RESOURCES_TO_COPY_TO_EXE_DIR "${RES_COPY_TO_EXE_DIR}" CACHE INTERNAL "Resource of ${ADD_TARGET_TARGET_NAME} to copy to exe dir" FORCE)
-       set(${ADD_TARGET_TARGET_NAME}_PROPERTY_RESOURCES_TO_COPY "${RES_COPY}" CACHE INTERNAL "Resource of ${ADD_TARGET_TARGET_NAME} to copy to given dir" FORCE)
-       set(${ADD_TARGET_TARGET_NAME}_PROPERTY_TARGET_DIR "${ADD_TARGET_TARGET_DIR}" CACHE INTERNAL "Path where target ${ADD_TARGET_TARGET_NAME} is defined." FORCE)
+    # define global variables with resources information and target dir. It cannot be done by properties, because interface target doesn't allow user defined properties.
+    set(${ADD_TARGET_TARGET_NAME}_PROPERTY_RESOURCES_TO_COPY_TO_EXE_DIR "${RES_COPY_TO_EXE_DIR}" CACHE INTERNAL "Resource of ${ADD_TARGET_TARGET_NAME} to copy to exe dir" FORCE)
+    set(${ADD_TARGET_TARGET_NAME}_PROPERTY_RESOURCES_TO_COPY "${RES_COPY}" CACHE INTERNAL "Resource of ${ADD_TARGET_TARGET_NAME} to copy to given dir" FORCE)
+    set(${ADD_TARGET_TARGET_NAME}_PROPERTY_TARGET_DIR "${ADD_TARGET_TARGET_DIR}" CACHE INTERNAL "Path where target ${ADD_TARGET_TARGET_NAME} is defined." FORCE)
+    set(${ADD_TARGET_TARGET_NAME}_PROPERTY_ALL_LIBS "${ALL_LIBS}" CACHE INTERNAL "All libs (transitive) linked to build target ${ADD_TARGET_TARGET_NAME}." FORCE)
 
     if("${ADD_TARGET_TARGET_TYPE}" STREQUAL "EXE")
+        # copy resources only if this target is executable target.
+        
         foreach(RES IN LISTS ${ADD_TARGET_TARGET_NAME}_PROPERTY_RESOURCES_TO_COPY_TO_EXE_DIR)
 
             if (NOT EXISTS "${RES}")
@@ -396,7 +443,7 @@ function(AddTargetInternal)
                     add_custom_command(TARGET ${ADD_TARGET_TARGET_NAME} POST_BUILD
                         COMMAND ${CMAKE_COMMAND} -E copy_directory 
                             "${RES}" 
-                            "$<TARGET_FILE_DIR:${ADD_TARGET_TARGET_NAME}>/${DIR_NAME}")  # copy_directory copies content without folder, so folder needs to be added to destination path
+                            "$<TARGET_FILE_DIR:${ADD_TARGET_TARGET_NAME}>/${DIR_NAME}")  # copy_directory copies content without folder, so folder needs to be added to destination path.
                 else ()
                     add_custom_command(TARGET ${ADD_TARGET_TARGET_NAME} POST_BUILD
                         COMMAND ${CMAKE_COMMAND} -E copy
@@ -425,6 +472,7 @@ function(AddTargetInternal)
                 math(EXPR DEST_INDEX "${KEYWORD_INDEX}+1")
                 list(GET ${ADD_TARGET_TARGET_NAME}_PROPERTY_RESOURCES_TO_COPY ${DEST_INDEX} DEST)
 
+                # check if the format is correct: src_path1 TO dest_path1; src_path2 TO dest_path2 (etc.) 
                 if (NOT "${KEYWORD}" STREQUAL "TO")
                     logError("Incorrect key for RESOURCES_TO_COPY in target: ${ADD_TARGET_TARGET_NAME} after item: ${SRC}")
                 endif()
@@ -459,7 +507,7 @@ function(AddTargetInternal)
     endif()
 endfunction()
 
-
+# \brief Prints information about the given target name.
 function(printTarget TARGET_NAME)
     logStatus("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 
@@ -474,99 +522,67 @@ function(printTarget TARGET_NAME)
     logStatus("ROOT: ${${TARGET_NAME}_PROPERTY_TARGET_DIR}")
 
     get_target_property(OUTPUT_SOURCES ${TARGET_NAME} SOURCES)
-    if (OUTPUT_SOURCES)
-        foreach(ITEM IN LISTS OUTPUT_SOURCES)
-            logStatus("SOURCES: ${ITEM}")
-        endforeach()
-    endif ()
-    
-    get_target_property(OUTPUT_INC_DIR ${TARGET_NAME} INCLUDE_DIRECTORIES)
-    if (OUTPUT_INC_DIR)
-        foreach(ITEM IN LISTS OUTPUT_INC_DIR)
-            logStatus("INCLUDE_DIRECTORIES: ${ITEM}")
-        endforeach()
-    endif ()
-    
+    logListStatus(OUTPUT_SOURCES "Source files: " "SRC: ")
+        
     get_target_property(OUTPUT_INT_INC_DIR ${TARGET_NAME} INTERFACE_INCLUDE_DIRECTORIES)
-    if (OUTPUT_INT_INC_DIR)
-        foreach(ITEM IN LISTS OUTPUT_INT_INC_DIR)
-            logStatus("INTERFACE_INCLUDE_DIRECTORIES: ${ITEM}")
-        endforeach()
-    endif ()
-    
-    get_target_property(OUTPUT_COMPILE_DEF ${TARGET_NAME} COMPILE_DEFINITIONS)
-    if (OUTPUT_COMPILE_DEF)
-        foreach(ITEM IN LISTS OUTPUT_COMPILE_DEF)
-            logStatus("COMPILE_DEFINITIONS: ${ITEM}")
-        endforeach()
-    endif ()
+    logListStatus(OUTPUT_INT_INC_DIR "Public include dirs: " "DIR: ")
+
+    get_target_property(OUTPUT_INC_DIR ${TARGET_NAME} INCLUDE_DIRECTORIES)
+    logListStatus(OUTPUT_INC_DIR "Include dirs: " "DIR: ")
     
     get_target_property(OUTPUT_INT_COMPILE_DEF ${TARGET_NAME} INTERFACE_COMPILE_DEFINITIONS)
-    if (OUTPUT_INT_COMPILE_DEF)
-        foreach(ITEM IN LISTS OUTPUT_INT_COMPILE_DEF)
-            logStatus("COMPILE_DEFINITIONS: ${ITEM}")
-        endforeach()
-    endif ()
+    logListStatus(OUTPUT_INT_COMPILE_DEF "Public defines: " "DEF: ")
     
-    get_target_property(OUTPUT_COMPILE_OPT ${TARGET_NAME} COMPILE_OPTIONS)
-    if (OUTPUT_COMPILE_OPT)
-        foreach(ITEM IN LISTS OUTPUT_COMPILE_OPT)
-            logStatus("COMPILE_OPTIONS: ${ITEM}")
-        endforeach()
-    endif ()
+    get_target_property(OUTPUT_COMPILE_DEF ${TARGET_NAME} COMPILE_DEFINITIONS)
+    logListStatus(OUTPUT_COMPILE_DEF "Defines: " "DEF: ")
     
     get_target_property(OUTPUT_INT_COMPILE_OPT ${TARGET_NAME} INTERFACE_COMPILE_OPTIONS)
-    if (OUTPUT_INT_COMPILE_OPT)
-        foreach(ITEM IN LISTS OUTPUT_INT_COMPILE_OPT)
-            logStatus("INTERFACE_COMPILE_OPTIONS: ${ITEM}")
-        endforeach()
-    endif ()
-    
-    get_target_property(OUTPUT_LINK_OPT ${TARGET_NAME} LINK_OPTIONS)
-    if (OUTPUT_LINK_OPT)
-        foreach(ITEM IN LISTS OUTPUT_LINK_OPT)
-            logStatus("LINK_OPTIONS: ${ITEM}")
-        endforeach()
-    endif ()
+    logListStatus(OUTPUT_INT_COMPILE_OPT "Public compile flags: " "FLAG: ")
+ 
+    get_target_property(OUTPUT_COMPILE_OPT ${TARGET_NAME} COMPILE_OPTIONS)
+    logListStatus(OUTPUT_COMPILE_OPT "Compile flags: " "FLAG: ")
     
     get_target_property(OUTPUT_INT_LINK_OPT ${TARGET_NAME} INTERFACE_LINK_OPTIONS)
-    if (OUTPUT_INT_LINK_OPT)
-        foreach(ITEM IN LISTS OUTPUT_INT_LINK_OPT)
-            logStatus("INTERFACE_LINK_OPTIONS: ${ITEM}")
-        endforeach()
-    endif ()
+    logListStatus(OUTPUT_INT_LINK_OPT "Public link flags: " "FLAG: ")
+    
+    get_target_property(OUTPUT_LINK_OPT ${TARGET_NAME} LINK_OPTIONS)
+    logListStatus(OUTPUT_LINK_OPT "Link flags: " "FLAG: ")
+    
+    logListStatus(${TARGET_NAME}_PROPERTY_RESOURCES "Resources that will be copied to each executable file location that links this target or just this target resources:" "RES: ")
+    
+    if (${TARGET_NAME}_PROPERTY_TARGET_DIR)
+    
+        list(LENGTH ${TARGET_NAME}_PROPERTY_RESOURCES_TO_COPY RES_LIST_LENGTH)
+        logStatus("Resources that will be copied to each executable file location that links this target or just this target resources:")
+        
+        foreach (KEYWORD_INDEX RANGE 1 ${RES_LIST_LENGTH} 3) # RANGE start stop step
 
+            math(EXPR INDEX "${KEYWORD_INDEX}-1")
+            list(GET ${TARGET_NAME}_PROPERTY_RESOURCES_TO_COPY ${INDEX} SRC)
+
+            list(GET ${TARGET_NAME}_PROPERTY_RESOURCES_TO_COPY ${KEYWORD_INDEX} KEYWORD)
+
+            math(EXPR DEST_INDEX "${KEYWORD_INDEX}+1")
+            list(GET ${TARGET_NAME}_PROPERTY_RESOURCES_TO_COPY ${DEST_INDEX} DEST)
+
+            logStatus("Res: ${SRC} TO ${DEST}")
+            
+        endforeach ()
+    endif ()
+    
+    logListStatus(${TARGET_NAME}_PROPERTY_ALL_LIBS "Transivite link targets: " "TARGET: ")
+    
     logStatus("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 endfunction()
 
-# \brief Creates target.
-# \param[in] TARGET_NAME Target name
-# \param[in] TARGET_TYPE Target type: EXE for executable, STATIC for static library, SHARED for shared library, INTERFACE for headers only library
-# \param[in] TARGET_DIR Path to directory where target is defined
-# \param[in] SRC Source files
-# \param[in] PUBLIC_INC_DIRS Arguments to target_include_directories with PUBLIC/INTERFACE visibility,
-# \param[in] PRIVATE_INC_DIRS Arguments to target_include_directories with PRIVATE visibility,
-# \param[in] PUBLIC_LIBS Arguments to target_link_libraries with PUBLIC/INTERFACE visibility,
-# \param[in] PRIVATE_LIBS Arguments to target_link_libraries with PRIVATE visibility,
-# \param[in] PUBLIC_DEFINES Arguments to target_compile_definitions with PUBLIC/INTERFACE visibility,
-# \param[in] PRIVATE_DEFINES Arguments to target_compile_definitions with PRIVATE visibility,
+# \brief Creates target. See comment of AddTargetInternal.
 macro(AddTarget)
 
     AddTargetInternal(TARGET_DIR "${CMAKE_CURRENT_SOURCE_DIR}" TARGET_LINE "${CMAKE_CURRENT_LIST_LINE}" ${ARGV})
     
 endmacro()
 
-# \brief Creates test target.
-# \param[in] TARGET_NAME Target name
-# \param[in] TARGET_TYPE Target type: EXE for executable, STATIC for static library, SHARED for shared library, INTERFACE for headers only library
-# \param[in] TARGET_DIR Path to directory where target is defined
-# \param[in] SRC Source files
-# \param[in] PUBLIC_INC_DIRS Arguments to target_include_directories with PUBLIC/INTERFACE visibility,
-# \param[in] PRIVATE_INC_DIRS Arguments to target_include_directories with PRIVATE visibility,
-# \param[in] PUBLIC_LIBS Arguments to target_link_libraries with PUBLIC/INTERFACE visibility,
-# \param[in] PRIVATE_LIBS Arguments to target_link_libraries with PRIVATE visibility,
-# \param[in] PUBLIC_DEFINES Arguments to target_compile_definitions with PUBLIC/INTERFACE visibility,
-# \param[in] PRIVATE_DEFINES Arguments to target_compile_definitions with PRIVATE visibility,
+# \brief Creates target. See comment of AddTargetInternal.
 macro(AddTestTarget)
 
     AddTargetInternal(TARGET_DIR "${CMAKE_CURRENT_SOURCE_DIR}" TARGET_LINE "${CMAKE_CURRENT_LIST_LINE}" ${ARGV} TEST_TARGET)

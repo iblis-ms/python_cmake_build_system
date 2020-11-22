@@ -1,7 +1,9 @@
 # Author: Marcin Serwach
 # License: MIT
-# ULR: https://github.com/iblis-ms/cmake_add_target
+# ULR: https://github.com/iblis-ms/python_cmake_build_system
 # 
+
+# see GitHub documentation of GoogleTest framework: https://github.com/google/googletest/blob/master/googletest/docs/advanced.md
 
 if (DEFINED GTEST_FILTER)
     list(APPEND GTEST_ARGS_LIST "--gtest_filter=${GTEST_FILTER}")

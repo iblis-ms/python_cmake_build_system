@@ -1,10 +1,7 @@
-
 # Author: Marcin Serwach
 # License: MIT
 # ULR: https://github.com/iblis-ms/python_cmake_build_system
-
-
-    
+ 
 class GoogleTest:
 
     def appendArgParse(self, arg_parser):
