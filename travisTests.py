@@ -157,8 +157,8 @@ def windowsAll():
     logger = logging.getLogger("BuildSystem")
     
     profiles = ['Release', 'Debug']
-    generators = ['Unix Makefiles', 'Xcode']
-    compilers = [['gcc', 'g++'], ['clang', 'clang++']]
+    generators = ['Visual Studio 16 2019']
+    compilers = [['cl', 'cl']]
     cpp_standards = ['17', '20']
     
     for profile in profiles:
@@ -169,8 +169,8 @@ def windowsAll():
                     buf = generator
                     output = 'output_' + profile + '_' + re.sub(' ', '_', generator) + '_' + re.sub(' ', '_', compiler[0]) + '_' + re.sub(' ', '_', compiler[1]) + '_' + cpp_standard
                     
-                    cmd = ['python3', 'build.py', '--profile', profile, 
-                        '--generator', generator, 
+                    cmd = ['py', '-3', 'build.py', '--profile', profile, 
+                        '--generator',  generator, 
                         '--c_compiler', compiler[0], 
                         '--cxx_compiler', compiler[1], 
                         '--cpp_standard', cpp_standard, 
@@ -182,27 +182,15 @@ def windowsAll():
                     return_code = Utils.run(cmd, current_dir)
                     if return_code != 0:
                         return False
-                        
-                    if generator == "Xcode":
-                        fileArg = os.path.join(current_dir, 'output', output, 'factorial', 'factorialExeShared', profile, 'FactorialShared')
-                    else:
-                        fileArg = os.path.join(current_dir, 'output', output, 'factorial', 'factorialExeShared', 'FactorialShared')
-                    cmd = ['nm', fileArg, ]
-                    return_code, output_txt = Utils.run(cmd, current_dir, collect_output = True)
-                    if return_code != 0:
+                    
+                    output_exe_dir = os.path.join(current_dir, 'output', output, 'factorial', profile)
+                    if not os.path.isdir(output_exe_dir):
                         return False
-                        
-                    lines = output_txt.count('\n')
-                  
-                    if profile == 'Release':
-                        if lines > 60:
-                            logger.error("File: " + str(fileArg) + " has debug symbols, but it shouldn't have them in Release mode")
+                    
+                    if profile == 'Debug':
+                        pdb_file_path = os.path.join(output_exe_dir, 'FactorialShared.pdb')
+                        if not os.path.isdfile(pdb_file_path):
                             return False
-                    else:
-                        if lines <= 60:
-                            logger.error("File: " + str(fileArg) + " hasn't debug symbols, but it sould have them in Debug mode")
-                            return False
-                        
                     logger.info("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
              
     return True
@@ -229,6 +217,8 @@ def main():
         #if not res: # sanitizer not ready
         #    return False;
         #res = linuxSanitizerAndDefines()
+    elif Utils.sysOp().windows:
+        res = windowsAll()
         
     return res
     

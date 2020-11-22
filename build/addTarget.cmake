@@ -145,7 +145,7 @@ endfunction()
 # \param[in] RESOURCES_TO_COPY_TO_EXE_DIR Resources that shall be copied to all executable target file location that link this target,
 # \param[in] RESOURCES_TO_COPY Similar to RESOURCES_TO_COPY_TO_EXE_DIR, but resources that shall be copied to given location. Format: source_path TO dest_path,
 # \param[in] PUBLIC_LINK_OPTIONS Linker arguments with PUBLIC visibility,
-# \param[in] PUBLIC_LINK_OPTIONS Linker arguments with PRIVATE visibility,
+# \param[in] PRIVATE_LINK_OPTIONS Linker arguments with PRIVATE visibility,
 # \param[in] PUBLIC_COMPILE_OPTIONS Compiler arguments with PUBLIC visibility,
 # \param[in] PRIVATE_COMPILE_OPTIONS Compiler arguments with PRIVATE visibility.
 function(AddTargetInternal)

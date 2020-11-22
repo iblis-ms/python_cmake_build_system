@@ -135,6 +135,12 @@ class BuildSystem:
             nargs="+", 
             type=str
             )
+        arg_parser.add_argument(
+            '-vc_a',
+            '--vc_architecture',
+            help='Visual Studio generator architecture: .',
+            )
+
 
         cpp_std_choice = []
         for std in CppStandard:
@@ -241,10 +247,16 @@ class BuildSystem:
         self.__downloadData()
 
         cmd = ['cmake']
-        
+
         if self.args.generator:
             cmd.extend(['-G', self.args.generator])
+            
+        if self.args.vc_architecture is None:
+            self.args.vc_architecture = 'x64'
 
+        if (self.args.generator is None and Utils.sysOp().windows) or ("Visual" in self.args.generator):
+            cmd.extend(['-A', self.args.vc_architecture])
+            
         cmd.append('-DCMAKE_BUILD_TYPE=' + self.args.profile)
         cmd.append('-DCMAKE_CXX_STANDARD=' + str(self.args.cpp_standard))
 
@@ -252,7 +264,6 @@ class BuildSystem:
             c_def = ';'.join(self.args.c_definitions)
             cmd.append('-DGLOBAL_COMPILE_DEFINES=' + c_def)
             
-            print("!!!!!!!!!!!!!!!!!!!!!!!!: " + str(self.args.c_definitions))
         if self.args.c_compiler:
             cmd.append('-DCMAKE_C_COMPILER=' + str(self.args.c_compiler))
         if self.args.cxx_compiler:
