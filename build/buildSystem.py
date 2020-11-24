@@ -8,7 +8,7 @@ import argparse
 import os
 import shutil
 from builtins import staticmethod
-import requests
+import urllib.request
 from enum import IntEnum, unique, Enum
 import logging
 

@@ -4,7 +4,7 @@
 # License: MIT
 # ULR: https://github.com/iblis-ms/python_cmake_build_system
 
-import requests
+import urllib.request
 
 from .utils import Utils
 

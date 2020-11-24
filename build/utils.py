@@ -8,7 +8,7 @@ import os
 import subprocess
 from builtins import staticmethod
 import sys
-import requests
+import urllib.request
 import logging
         
 from  .sysOp import SysOp

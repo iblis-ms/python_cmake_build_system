@@ -81,6 +81,7 @@ def linuxAll():
                     cmd = ['file', fileArg]
                     return_code, output_txt = Utils.run(cmd, current_dir, collect_output = True)
                     if return_code != 0:
+                        logger.error("Cannot run nm")
                         return False
                         
                     if profile == 'Release':
@@ -134,6 +135,7 @@ def macosAll():
                     cmd = ['nm', fileArg, ]
                     return_code, output_txt = Utils.run(cmd, current_dir, collect_output = True)
                     if return_code != 0:
+                        logger.error("Cannot run nm")
                         return False
                         
                     lines = output_txt.count('\n')
@@ -183,13 +185,15 @@ def windowsAll():
                     if return_code != 0:
                         return False
                     
-                    output_exe_dir = os.path.join(current_dir, 'output', output, 'factorial', profile)
+                    output_exe_dir = os.path.join(current_dir, 'output', output, 'factorial', 'factorialExeShared', profile)
                     if not os.path.isdir(output_exe_dir):
+                        logger.error("Output: " + str(output_exe_dir) + " doesn't exist")
                         return False
-                    
+                        
                     if profile == 'Debug':
                         pdb_file_path = os.path.join(output_exe_dir, 'FactorialShared.pdb')
-                        if not os.path.isdfile(pdb_file_path):
+                        if not os.path.isfile(pdb_file_path):
+                            logger.error("Debug file: " + str(output_exe_dir) + " doesn't exist")
                             return False
                     logger.info("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
              
