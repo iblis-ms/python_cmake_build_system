@@ -13,13 +13,13 @@ void run(CMainClass::EMethod aMethod, const std::filesystem::path& aPath)
     std::cout<<gMethodStr[static_cast<unsigned int>(aMethod)]<<":\n";
     for (unsigned int i = 0; i < 10; ++i)
     {
-        std::cout<<i<<": "<<m.runFibonacci(aMethod, i)<<std::endl;
+        std::cout<<i<<": "<<m.runFactorial(aMethod, i)<<std::endl;
     }
     
     if (std::filesystem::is_character_file(aPath))
     {
         std::cout<<"File: "<<aPath<<":\n";
-        std::cout<<"Value: "<<m.runFibonacciFromFile(aMethod, aPath)<<std::endl;
+        std::cout<<"Value: "<<m.runFactorialFromFile(aMethod, aPath)<<std::endl;
     }
 }
 

@@ -132,7 +132,7 @@ def macosAll():
                         fileArg = os.path.join(current_dir, 'output', output, 'factorial', 'factorialExeShared', profile, 'FactorialShared')
                     else:
                         fileArg = os.path.join(current_dir, 'output', output, 'factorial', 'factorialExeShared', 'FactorialShared')
-                    cmd = ['nm', fileArg, ]
+                    cmd = ['nm', fileArg]
                     return_code, output_txt = Utils.run(cmd, current_dir, collect_output = True)
                     if return_code != 0:
                         logger.error("Cannot run nm")
@@ -159,32 +159,44 @@ def windowsAll():
     logger = logging.getLogger("BuildSystem")
     
     profiles = ['Release', 'Debug']
-    generators = ['Visual Studio 16 2019']
-    compilers = [['cl', 'cl']]
+    configures = [
+        {'generator': 'Visual Studio 16 2019', 
+         'c_compiler': 'cl', 
+         'cxx_compiler': 'cl'}, 
+        {'generator': 'MinGW Makefiles', 
+         'c_compiler': 'gcc', 
+         'cxx_compiler': 'g++'},
+        {'generator': 'Ninja', 
+         'c_compiler': 'gcc', 
+         'cxx_compiler': 'g++'}
+         ]
+
     cpp_standards = ['17', '20']
-    
+
     for profile in profiles:
-        for generator in generators:
-            for compiler in compilers:
-                for cpp_standard in cpp_standards:
-                    logger.info("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
-                    buf = generator
-                    output = 'output_' + profile + '_' + re.sub(' ', '_', generator) + '_' + re.sub(' ', '_', compiler[0]) + '_' + re.sub(' ', '_', compiler[1]) + '_' + cpp_standard
-                    
-                    cmd = ['py', '-3', 'build.py', '--profile', profile, 
-                        '--generator',  generator, 
-                        '--c_compiler', compiler[0], 
-                        '--cxx_compiler', compiler[1], 
-                        '--cpp_standard', cpp_standard, 
-                        '--run_tests', 
-                        '--clean',
-                        '--log_output_file', 'log.txt', 
-                        '--output',  os.path.join(current_dir, 'output', output)]
-                    
-                    return_code = Utils.run(cmd, current_dir)
-                    if return_code != 0:
-                        return False
-                    
+        for configure in configures:
+            for cpp_standard in cpp_standards:
+                logger.info("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+                generator = configure['generator']
+                c_compiler = configure['c_compiler']
+                cxx_compiler = configure['cxx_compiler']
+                output = 'output_' + profile + '_' + re.sub(' ', '_', generator) + '_' + re.sub(' ', '_', c_compiler) + '_' + re.sub(' ', '_', cxx_compiler) + '_' + cpp_standard
+                
+                cmd = ['py', '-3', 'build.py', '--profile', profile, 
+                    '--generator',  generator, 
+                    '--c_compiler', c_compiler, 
+                    '--cxx_compiler', cxx_compiler, 
+                    '--cpp_standard', cpp_standard, 
+                    '--run_tests', 
+                    '--clean',
+                    '--log_output_file', 'log.txt', 
+                    '--output',  os.path.join(current_dir, 'output', output)]
+                
+                return_code = Utils.run(cmd, current_dir)
+                if return_code != 0:
+                    return False
+                
+                if generator == 'Visual Studio 16 2019':
                     output_exe_dir = os.path.join(current_dir, 'output', output, 'factorial', 'factorialExeShared', profile)
                     if not os.path.isdir(output_exe_dir):
                         logger.error("Output: " + str(output_exe_dir) + " doesn't exist")
@@ -195,8 +207,9 @@ def windowsAll():
                         if not os.path.isfile(pdb_file_path):
                             logger.error("Debug file: " + str(output_exe_dir) + " doesn't exist")
                             return False
-                    logger.info("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
-             
+
+                logger.info("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+            
     return True
     
 

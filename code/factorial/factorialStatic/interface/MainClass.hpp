@@ -14,9 +14,10 @@ public:
     
     CMainClass();
     
-    unsigned int runFibonacci(EMethod aMethod, unsigned int aIndex);
+    unsigned int runFactorial(EMethod aMethod, unsigned int aIndex);
 
-    unsigned int runFibonacciFromFile(EMethod aMethod, const std::filesystem::path& aPath);
+    unsigned int runFactorialFromFile(EMethod aMethod, const std::filesystem::path& aPath);
 };
 
 #endif // MAIN_CLASS_HPP_
+

@@ -1,3 +1,9 @@
+Linux & MacOS:
+[![Linux & MacOS Build](https://travis-ci.org/iblis-ms/python_cmake_build_system.svg?branch=master)](https://travis-ci.org/iblis-ms/python_cmake_build_system)
+Windows:
+[Windows Build(https://ci.appveyor.com/project/iblis-ms/python-cmake-build-system/branch/master?svg=true)](https://ci.appveyor.com/project/iblis-ms/python-cmake-build-system/branch/master?svg=true)
+See tests chapter to get known what is tested exactly.
+
 # Python based build system with Conan.io support
 The common approach of build system in many C++ project is to use CMake, Conan.io and Python just to trigger them. 
 This build system supports:

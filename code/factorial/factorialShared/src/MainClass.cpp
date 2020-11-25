@@ -9,7 +9,7 @@ CMainClass::CMainClass()
     std::cout<<"I am a static version\n";
 }
 
-unsigned int CMainClass::runFibonacci(EMethod aMethod, unsigned int aIndex)
+unsigned int CMainClass::runFactorial(EMethod aMethod, unsigned int aIndex)
 {
     if (EMethod::EITERATIVE == aMethod)
     {
@@ -29,7 +29,7 @@ unsigned int CMainClass::runFibonacci(EMethod aMethod, unsigned int aIndex)
     }
 }
 
-unsigned int CMainClass::runFibonacciFromFile(EMethod aMethod, const std::filesystem::path& aPath)
+unsigned int CMainClass::runFactorialFromFile(EMethod aMethod, const std::filesystem::path& aPath)
 {
     if (EMethod::EITERATIVE == aMethod)
     {
