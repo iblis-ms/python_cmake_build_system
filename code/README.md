@@ -7,21 +7,11 @@ This folder contains an example of usage the build system infrastructure. This p
 - compile with MS VC, clang (Linux and MacOS), gcc
 
 The functionality of this project is just to calculate factorial in iterative way:
-$$
-n! = 
-  \begin{cases}
-  \prod_{k=1}^{n}{k}  & \quad \text{if } k \geq 0\\
-  1  & \quad \text{if } k = 0
-  \end{cases}
-$$
+![Factorial iterative](https://raw.githubusercontent.com/iblis-ms/python_cmake_build_system/master/doc/img/factorial_iterative.PNG)
+
 and recursive way:
-$$
-n! = 
-  \begin{cases}
-  n \cdot (n-1)!  & \quad \text{if } k \geq 0\\
-  1  & \quad \text{if } k = 0
-  \end{cases}
-$$
+![Factorial recursive](https://raw.githubusercontent.com/iblis-ms/python_cmake_build_system/master/doc/img/factorial_recursive.PNG)
+
 API has 3 options to calculate factorial by providing:
 
 1. an input number directly to the calculate function,
@@ -58,13 +48,148 @@ The architecture is softly based on abstract factory patter.
 
 ![class_diagram](https://raw.githubusercontent.com/iblis-ms/python_cmake_build_system/master/doc/img/class_diagram.png)
 
+
+
+## CMakeLists.txt
+
+#### FactorialInterface
+
+```cmake
+addTarget(
+    TARGET_NAME "FactorialInterface"
+    TARGET_TYPE "INTERFACE"
+    PUBLIC_INC_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/interface"
+	)
+```
+
+**FactorialInterface** is interface target type, that has its API located in interface folder. 
+
+Folder structure:
+
+```
+factorialInterface
+├── CMakeLists.txt
+└── interface
+    ├── FactorialFactoryInterface.hpp
+    └── FactorialInterface.hpp
+```
+
+Therefore, FactorialFactoryInterface.hpp & *FactorialInterface.hpp* can be used by other targets.
+
+#### FactorialIteravite
+
+```cmake
+
+set(SRC
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/FactorialFactoryIterative.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/FactorialIterative.cpp"
+    )
+
+set(INC 
+    "${CMAKE_CURRENT_SOURCE_DIR}/inc"
+    )
+
+set(INTERFACE
+    "${CMAKE_CURRENT_SOURCE_DIR}/interface"
+    )
+
+set(RES_COPY_TO_EXE_DIR
+    "${CMAKE_CURRENT_SOURCE_DIR}/res/iterative.txt"
+    "${CMAKE_CURRENT_SOURCE_DIR}/res/iterative_res"
+    )
+
+set(RES_COPY
+    "${CMAKE_CURRENT_SOURCE_DIR}/res/iterative2.txt" TO "${CMAKE_BINARY_DIR}"
+    "${CMAKE_CURRENT_SOURCE_DIR}/res/iterative_res2" TO "${CMAKE_BINARY_DIR}"
+    )
+
+addTarget(
+    TARGET_NAME "FactorialIterative"
+    TARGET_TYPE "STATIC"
+    SRC "${SRC}"
+    PUBLIC_INC_DIRS "${INTERFACE}"
+    PRIVATE_INC_DIRS "${INC}"
+    PUBLIC_LIBS "FactorialInterface"
+    RESOURCES_TO_COPY_TO_EXE_DIR "${RES_COPY_TO_EXE_DIR}"
+    RESOURCES_TO_COPY "${RES_COPY}"
+    )
+
+add_subdirectory(tests)
+```
+
+The code above creates a static library target named **FactorialIterative** with source files *FactorialFactoryIterative.cpp* & *FactorialIterative.cpp*. The folder *interface* is a public API of this target. Private headers are located in *inc*. It links **FactorialInterface** library. Moreover, it has resources: *iterative.txt* file & *iterative_res* folder to copy to any executable target that links **FactorialIterative**. In addition, the file *iterative2.txt* and the folder *iterative_res2* will be copied to output directory of entire build which is covered by CMake variable *${CMAKE_BINARY_DIR}*. There is also *add_subdirectory* called, to enter *tests* folder, where unit tests are located.
+
+CMakeLists.txt for unit tests target **FactorialIterativeTest**. The target doesn't link **FactorialIteravite**, but compiles its files directly by using the same variable *${SRC}*. **FactorialIterativeTest** is an executable target, but it doesn't link **FactorialIteravite**, so the would be copied any resources of **FactorialIteravite**. 
+
+```cmake
+set(SRC_TEST
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/FactorialFactoryIterativeTest.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/FactorialIterativeTest.cpp"
+    )
+
+set(RES_FILE 
+    "${CMAKE_CURRENT_SOURCE_DIR}/res/iterative_1.txt"
+    "${CMAKE_CURRENT_SOURCE_DIR}/res/iterative_2.txt"
+    "${CMAKE_CURRENT_SOURCE_DIR}/res/iterative_3.txt"
+    "${CMAKE_CURRENT_SOURCE_DIR}/res/iterative_4.txt"
+    "${CMAKE_CURRENT_SOURCE_DIR}/res/iterative_5.txt"
+    "${CMAKE_CURRENT_SOURCE_DIR}/res/iterative_6.txt"
+    "${CMAKE_CURRENT_SOURCE_DIR}/res/iterative_dir")
+
+addTestTarget(
+    TARGET_NAME "FactorialIterativeTest"
+    TARGET_TYPE "EXE"
+    SRC "${SRC}" "${SRC_TEST}"
+    PUBLIC_INC_DIRS "${INTERFACE}"
+    PRIVATE_INC_DIRS "${INC}"
+    PUBLIC_LIBS "FactorialInterface"
+    RESOURCES_TO_COPY_TO_EXE_DIR "${RES_FILE}"
+    )
+```
+
+Folder structure:
+
+```
+factorialIterative/
+├── CMakeLists.txt
+├── inc
+│   └── FactorialIterative.hpp
+├── interface
+│   └── FactorialFactoryIterative.hpp
+├── res
+│   ├── iterative2.txt
+│   ├── iterative_res
+│   │   └── iterative_folder_res.txt
+│   ├── iterative_res2
+│   │   └── iterative_folder_res.txt
+│   └── iterative.txt
+├── src
+│   ├── FactorialFactoryIterative.cpp
+│   └── FactorialIterative.cpp
+└── tests
+    ├── CMakeLists.txt
+    ├── conanfile.txt
+    ├── res
+    │   ├── iterative_1.txt
+    │   ├── iterative_2.txt
+    │   ├── iterative_3.txt
+    │   ├── iterative_4.txt
+    │   ├── iterative_5.txt
+    │   ├── iterative_6.txt
+    │   └── iterative_dir
+    │       └── iterative.txt
+    └── src
+        ├── FactorialFactoryIterativeTest.cpp
+        └── FactorialIterativeTest.cpp
+```
+
+
+
 # Tests
 
 All tests cases were built with Debug and Release profiles. For each configuration unit tests were built and run.
 
 Code use content from std::filesystem, which was introduced in C++17.
-
-
 
 Test builds are done on Travis (Linux & MacOS) & AppVeyor (Windows).
 
@@ -105,7 +230,7 @@ which means:
 
 There is checked an execution of clang address sanitizer, by providing C/C++ defines that enables memory leak:
 
-```
+```c++
 TEST(IterativeTest, calcFromDir)
 {
     CFactorialIterative factorial;

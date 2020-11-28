@@ -1,8 +1,7 @@
 Linux & MacOS:
 [![Linux & MacOS Build](https://travis-ci.org/iblis-ms/python_cmake_build_system.svg?branch=master)](https://travis-ci.org/iblis-ms/python_cmake_build_system)
 Windows:
-[Windows Build(https://ci.appveyor.com/project/iblis-ms/python-cmake-build-system/branch/master?svg=true)](https://ci.appveyor.com/project/iblis-ms/python-cmake-build-system/branch/master?svg=true)
-See tests chapter to get known what is tested exactly.
+[![Build status](https://ci.appveyor.com/api/projects/status/github/iblis-ms/python_cmake_build_system?branch=master&svg=true)](https://ci.appveyor.com/project/iblis-ms/python_cmake_build_system)
 
 # Python based build system with Conan.io support
 The common approach of build system in many C++ project is to use CMake, Conan.io and Python just to trigger them. 
@@ -21,20 +20,23 @@ This build system supports:
 - CMake source groups that represents folder structure
 - many logs levels
 - saving logs to file
-- configurable input (source code ) folder and output folder
+- configurable input (source code ) folder and output folders
+- static, shared, interface target are treated in the same - you don't need to worry if put PUBLIC or INTERFACE token
 
-Moreover, it hides tough many CMake call by 2 functons: addTarget and addTestTarget.
+Moreover, it hides tough many CMake call by 2 functons: *addTarget* and *addTestTarget*. 
+
+Usage example is in code folder, see example [Readme](https://github.com/iblis-ms/python_cmake_build_system/blob/master/code/README.md).
 
 ## CMake
 CMake is a program that manages build system mostly for C/C++ projects. It is commonly used in C/C++ project (for example GoogleTest, Boost). It has its own not very intuitive language. Via CMake we can provide what source code, heade files, libraries, compilation flags shall be used for compilation and linking. It also supports triggering tests.
 
 ## Conan.io
-Java has Maven & Gradle - dependency managers. Depenency managers are programs that downloads/builds external libraries, so we don't have to worry where we can find them and how to compile them. Now C/C++ has its own dependency manager Conan.io - a very helpful tool. 
+Java has Maven & Gradle - dependency managers. Dependency managers are programs that downloads/builds external libraries, so we don't have to worry where we can find them and how to compile them. Now C/C++ has its own dependency manager Conan.io - a very helpful tool. 
 You can find libaries on Conan.io website: https://conan.io/center/
 Required libaries are defined in conanfile.txt like: https://github.com/iblis-ms/python_cmake_build_system/blob/master/code/conanfile.txt
 
 ## Python
-Python is a scripting language which has very friendly API. It has argparse module, which is used for parsing command line arguments in very easy way. Python also supports subprocesses to run external programs and passing their outputs to the script, which is used for triggering CMake and passing arguments to it.
+Python is a scripting language which has very friendly API. It has *argparse* module, which is used for parsing command line arguments in very easy way. Python also supports subprocesses to run external programs and passing their outputs to the script, which is used for triggering CMake and passing arguments to it.
 
 # Python -> CMake -> Conan.io
 The approach of build system on this repo is to trigger Python, which runs CMake, which calls Conan.io. 
@@ -46,7 +48,7 @@ Firstly, Python calls CMake to generate build scripts with argument like build p
 
 CMake in generate stage can download 'conan.cmake' file that is used for calling Conan.io with proper arguments. However, I put the file on repo just in case changes what break backward compatibility (https://github.com/iblis-ms/python_cmake_build_system/blob/master/build/conan.cmake). 
 
-The script build.py is just an entry point to call functions from buildSystem.py, which is the core of the Python part of the build system. The build.py can be adapted to other project needs. The module buildSystem.py is responsible for parsing arguments, preparing argument to CMake call. The module calls CMake to generate project. In this step CMake triggers Conan.io to download and build dependencies based on conaninfo.txt file. After that buildSystem.py runs CMake to build the project including tests. Finally, the module launches tests.
+The script *build.py* is just an entry point to call functions from *buildSystem.py*, which is the core of the Python part of the build system. The *build.py* can be adapted to other project needs. The module *buildSystem.py* is responsible for parsing arguments, preparing argument to CMake call. The module calls CMake to generate project. In this step CMake triggers Conan.io to download and build dependencies based on *conaninfo.txt* file. After that buildSystem.py runs CMake to build the project including tests. Finally, the module launches tests.
 ![Architecture](https://raw.githubusercontent.com/iblis-ms/python_cmake_build_system/master/doc/img/arch.png)
 
 # Build system argument
@@ -160,10 +162,10 @@ addTarget(
 	)
 
 ```
-All multiarguments options can receive a list of values or values one by one.
+All multi arguments options can receive a list of values or values one by one.
 
 # Can I use it in my project?
-Yes, definetely. The goal of this repo is to share very generic solution of build system approach. In build/buildSystem.py there is a generic Python script to help working with CMake. You can extends it like it was done in build.py. I will extends the generic module to support more build system options, which are commonly used in C++ projects.
+Yes, definitely. The goal of this repo is to share very generic solution of build system approach. In *build/buildSystem.py* there is a generic Python script to help working with CMake. You can extends it like it was done in *build.py*. I will extends the generic module to support more build system options, which are commonly used in C++ projects.
 
 # Author
 Marcin Serwach
