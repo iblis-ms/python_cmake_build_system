@@ -254,7 +254,7 @@ class BuildSystem:
         if self.args.vc_architecture is None:
             self.args.vc_architecture = 'x64'
 
-        if (self.args.generator is None and Utils.sysOp().windows) or ("Visual" in self.args.generator):
+        if (self.args.generator is None and Utils.sysOp().windows) or (self.args.generator is not None and "Visual" in self.args.generator):
             cmd.extend(['-A', self.args.vc_architecture])
             
         cmd.append('-DCMAKE_BUILD_TYPE=' + self.args.profile)
