@@ -38,15 +38,17 @@ class GCovCoverage:
 
     def getCmakeDefines(self, args):
         cmake = []
-        if args.gcov:
-            cmake.append('-DGCOV_ENABLE=1')
+        if not args.gcov:
+            return cmake
+        
+        cmake.append('-DGCOV_ENABLE=1')
         if not args.gcov_config_file:
             args.gcov_config_file = os.path.join(args.output, "gcov_config.txt")
         cmake.append('-DGCOV_CONF_PATH=' + str(args.gcov_config_file))
             
         if not args.gcov_output:
             folders = os.path.join(args.output, "code_ceverage")
-            os.makedirs(folders)
+            os.makedirs(folders, exist_ok=True)
             args.gcov_output = os.path.join(folders, "index.html")
 
         cmake.append('-DGCOV_OUTPUT_PATH=' + str(args.gcov_output))
@@ -54,8 +56,8 @@ class GCovCoverage:
         return cmake
 
     def afterRunTests(self, args):
-      #  cmd = ['gcovr', '--html', '--html-details' index.html]
+        if not args.gcov:
+            return 0
         cmd = ['gcovr', '--config', args.gcov_config_file]
         return_code = Utils.run(cmd, args.output)
         return return_code
-        #gcovr -r . --html --html-details index.html

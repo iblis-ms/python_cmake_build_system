@@ -16,6 +16,7 @@ from .googleTest import GoogleTest
 from .sanitizers import Sanitizer
 from .utils import Utils
 from .gcovCoverage import GCovCoverage
+from .benchmark import Benchmark
 
 @unique
 class CppStandard(IntEnum):
@@ -53,6 +54,7 @@ class BuildSystem:
         self.gtest = GoogleTest()
         self.sanitizer = Sanitizer()
         self.gconv = GCovCoverage()
+        self.benchmark = Benchmark()
         
     @staticmethod
     def __downloadData():
@@ -214,7 +216,8 @@ class BuildSystem:
         self.gtest.appendArgParse(arg_parser)
         self.sanitizer.appendArgParse(arg_parser)
         self.gconv.appendArgParse(arg_parser)
-        
+        self.benchmark.appendArgParse(arg_parser)
+
         return arg_parser
         
     def setup(self, arg_parser):
@@ -300,6 +303,8 @@ class BuildSystem:
         cmd.extend(sanitizer_args)
         gconv_args = self.gconv.getCmakeDefines(self.args)
         cmd.extend(gconv_args)
+        benchmark_args = self.benchmark.getCmakeDefines(self.args)
+        cmd.extend(benchmark_args)
         
         if pre_generate_fun is not None:
             if not pre_generate_fun(self.args, input_path, output_path, cmd):
@@ -340,7 +345,8 @@ class BuildSystem:
     def runTests(self, output_path):
         cmd = ['ctest', '--verbose']
         cmd.extend(['-C', self.args.profile])
-        return_code = Utils.run(cmd, output_path)
+        output_file_path = os.path.join(self.args.output, "testsOutput.txt")
+        return_code = Utils.run(cmd, output_path, output_file_path = output_file_path)
         if return_code == 0:
             self.gconv.afterRunTests(self.args)
         return return_code
@@ -360,12 +366,13 @@ class BuildSystem:
     
             build_result = self.build(output_path)
             if build_result != 0:
-                return False;
+                return False
 
         if self.args.run_tests == True or self.args.run_tests_only == True:
             test_result = self.runTests(output_path)
             if test_result != 0:
                 return False
+        self.benchmark.afterRunTests(self.args)
 
         return True
 

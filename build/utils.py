@@ -37,7 +37,7 @@ class Utils:
         return True
             
     @staticmethod
-    def run(cmd, working_dir, env = None, collect_output = False):
+    def run(cmd, working_dir, env = None, collect_output = False, output_file_path = None):
         """Runs given command in given working directory
         
         Parameters
@@ -71,6 +71,9 @@ class Utils:
         logger.info("-------------------------------------- <output> -------------------------------------")
 
         output_txt = ''
+        output_file = None
+        if output_file_path is not None:
+            output_file = open(output_file_path, "w")
         while True:
             output = proc.stdout.readline()
             pol = proc.poll()
@@ -81,11 +84,14 @@ class Utils:
                 strLineWithNewLine = output.decode(errors='ignore')
                 if collect_output:
                     output_txt = output_txt + strLineWithNewLine
+                if output_file is not None:
+                    output_file.write(strLineWithNewLine)
                 line = strLineWithNewLine[:-1]
                 logger.info(line)
                 
         return_code = proc.poll()
-        
+        if output_file is not None:
+            output_file.close()
         logger.info("-------------------------------------- </output> ------------------------------------")
         logger.info("Return code: " + str(return_code))
         logger.info("####################################### </run> ######################################")

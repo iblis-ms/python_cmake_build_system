@@ -60,11 +60,17 @@ function(initGCovConfig)
 
 endfunction()
 
+function(initBenchmarkConfig)
+
+    set(GLOBAL_INTERNAL_BENCHMARK_PROGRAMSS_FILE_PATH  ON  CACHE BOOL "Benchmark program list path")
+    file(REMOVE "${GLOBAL_INTERNAL_BENCHMARK_PROGRAMSS_FILE_PATH}")
+
+endfunction()
+
 if (NOT DEFINED GLOBAL_INTERNAL_SETUP)
     set(GLOBAL_INTERNAL_SETUP  ON  CACHE BOOL "Global setup done")
-
     if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-        set(GLOBAL_INTERNAL_COMPILE_OPTIONS "-fPIC")
+         set(GLOBAL_INTERNAL_COMPILE_OPTIONS  "-fPIC"  CACHE INTERNAL "Compilation fla: -fPIC")
     endif ()
 
     if (("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU") AND ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU"))
@@ -74,7 +80,8 @@ if (NOT DEFINED GLOBAL_INTERNAL_SETUP)
     if (GCOV_ENABLE)
         initGCovConfig()
     endif ()
-
+    get_filename_component(BUT "${CMAKE_CURRENT_LIST_FILE}"  DIRECTORY)
+    set(GLOBAL_INTERNAL_THIS_SCRIPT_DIR  "${BUT}"  CACHE INTERNAL "This sript location")
 endif ()
 
 # \brief Creates CMake groups based on folder structure. It only creates groups from folders passing recoursively and returning files that have one of given extensions.
@@ -174,6 +181,7 @@ function(AddTargetInternal)
 
     set(OPTIONAL_ARGUMENTS_PATTERN 
         TEST_TARGET
+        BENCHMARK_TARGET
         WIN_DLL_EXPORT_ALL_SYMBOLS
         )
     
@@ -547,6 +555,16 @@ function(AddTargetInternal)
             endif()
         endforeach()
     endif()
+
+    # benchmark
+    if (ADD_TARGET_BENCHMARK_TARGET)
+
+        add_custom_command(TARGET "${ADD_TARGET_TARGET_NAME}" POST_BUILD 
+            COMMAND  ${CMAKE_COMMAND} -E echo "$<TARGET_FILE:${ADD_TARGET_TARGET_NAME}>" >> "${CMAKE_BINARY_DIR}/paths_to_benchmarks.txt" 
+        )
+
+    endif()
+
 endfunction()
 
 # \brief Prints information about the given target name.
@@ -628,5 +646,12 @@ endmacro()
 macro(AddTestTarget)
 
     AddTargetInternal(TARGET_DIR "${CMAKE_CURRENT_SOURCE_DIR}" TARGET_LINE "${CMAKE_CURRENT_LIST_LINE}" ${ARGV} TEST_TARGET)
+    
+endmacro()
+
+# \brief Creates target. See comment of AddTargetInternal.
+macro(AddBenchmarkTarget)
+
+    AddTargetInternal(TARGET_DIR "${CMAKE_CURRENT_SOURCE_DIR}" TARGET_LINE "${CMAKE_CURRENT_LIST_LINE}" ${ARGV} BENCHMARK_TARGET)
     
 endmacro()
