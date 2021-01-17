@@ -9,7 +9,8 @@ set(SRC_TEST
 addTestTarget(
     TARGET_NAME "FactorialSharedTest"
     TARGET_TYPE "EXE"
-    SRC "${SRC}" "${SRC_TEST}"
+    SRC "${SRC}" 
+    TEST_SRC "${SRC_TEST}"
     PRIVATE_INC_DIRS "${INTERFACE}"
     PUBLIC_LIBS "FactorialIterative" "FactorialRecursive"
 	)

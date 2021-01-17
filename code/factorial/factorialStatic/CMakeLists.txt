@@ -14,7 +14,8 @@ set(INTERFACE
 addTarget(
     TARGET_NAME "FactorialStaticLib"
     TARGET_TYPE "STATIC"
-    SRC "${SRC}"
+    SRC "${SRC}" 
+    TEST_SRC "${SRC_TEST}"
     PUBLIC_INC_DIRS "${INTERFACE}"
     PUBLIC_LIBS "FactorialIterative" "FactorialRecursive"
 	)

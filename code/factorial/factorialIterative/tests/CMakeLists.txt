@@ -19,7 +19,8 @@ set(RES_FILE
 addTestTarget(
     TARGET_NAME "FactorialIterativeTest"
     TARGET_TYPE "EXE"
-    SRC "${SRC}" "${SRC_TEST}"
+    SRC "${SRC}" 
+    TEST_SRC "${SRC_TEST}"
     PUBLIC_INC_DIRS "${INTERFACE}"
     PRIVATE_INC_DIRS "${INC}"
     PUBLIC_LIBS "FactorialInterface"

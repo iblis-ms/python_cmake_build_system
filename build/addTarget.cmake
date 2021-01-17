@@ -48,11 +48,33 @@ include("${CMAKE_CURRENT_LIST_DIR}/gtestHelper.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/sanitizerHelper.cmake")
 
 
-if (NOT DEFINED GLOBAL_INTERNAL_COMPILE_OPTIONS)
+function(initGCovConfig)
+
+    file(REMOVE "${GCOV_CONF_PATH}")
+  
+    set(GCOV_CONFIG "output = ${GCOV_OUTPUT_PATH}\n")
+    set(GCOV_CONFIG "${GCOV_CONFIG}html-details = yes\n")
+    set(GCOV_CONFIG "${GCOV_CONFIG}root = ${CMAKE_BINARY_DIR}\n")
+
+    file(WRITE "${GCOV_CONF_PATH}" "${GCOV_CONFIG}")
+
+endfunction()
+
+if (NOT DEFINED GLOBAL_INTERNAL_SETUP)
+    set(GLOBAL_INTERNAL_SETUP  ON  CACHE BOOL "Global setup done")
 
     if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
         set(GLOBAL_INTERNAL_COMPILE_OPTIONS "-fPIC")
     endif ()
+
+    if (("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU") AND ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU"))
+        set(GLOBAL_INTERNAL_COMPILER_GCC ON)
+    endif()
+
+    if (GCOV_ENABLE)
+        initGCovConfig()
+    endif ()
+
 endif ()
 
 # \brief Creates CMake groups based on folder structure. It only creates groups from folders passing recoursively and returning files that have one of given extensions.
@@ -182,6 +204,8 @@ function(AddTargetInternal)
 
         PUBLIC_COMPILE_OPTIONS
         PRIVATE_COMPILE_OPTIONS
+
+        TEST_SRC
         )
   
     CMake_parse_arguments(ADD_TARGET "${OPTIONAL_ARGUMENTS_PATTERN}" "${ONE_ARGUMENT_PATTERN}" "${MULTI_ARGUMENT_PATTERN}" ${ARGN} )
@@ -193,6 +217,7 @@ function(AddTargetInternal)
         logDebug("TARGET_DIR=${ADD_TARGET_TARGET_DIR}")
         
         logDebug("SRC=${ADD_TARGET_SRC}")
+        logDebug("TEST_SRC=${ADD_TARGET_TEST_SRC}")
         
         logDebug("PUBLIC_INC_DIRS=${ADD_TARGET_PUBLIC_INC_DIRS}")
         logDebug("PRIVATE_INC_DIRS=${ADD_TARGET_PRIVATE_INC_DIRS}")
@@ -218,7 +243,9 @@ function(AddTargetInternal)
         
         logDebug("--------------------------------------------------------------")
     endif ()
-    
+
+    set(ADD_TARGET_SRC "${ADD_TARGET_SRC}" "${ADD_TARGET_TEST_SRC}")
+
     if (ADD_TARGET_TEST_TARGET) # only test targets can be excluded/include by match pattern via this script.
         if (ADD_TARGET_TEST_TARGET_INCLUDE)
             # check if include match pattern was defined and this target match to the pattern. If not match, don't create the target.
@@ -368,8 +395,23 @@ function(AddTargetInternal)
         else()
             add_test(NAME "${ADD_TARGET_TARGET_NAME}" COMMAND "${ADD_TARGET_TEST_COMMAND}" ${GTEST_ARGS_LIST} WORKING_DIRECTORY "$<TARGET_FILE_DIR:${ADD_TARGET_TARGET_NAME}>")
         endif()
+
+        if (GCOV_ENABLE AND GLOBAL_INTERNAL_COMPILER_GCC)
+            foreach(SRC_ITEM IN LISTS ADD_TARGET_TEST_SRC)
+                set(GCOV_CONFIG "${GCOV_CONFIG}filter = ${SRC_ITEM}\n")
+            endforeach()
+
+            file(APPEND "${GCOV_CONF_PATH}" "${GCOV_CONFIG}")
+        endif()
     endif()
     
+    # gcov
+    if ((NOT "${ADD_TARGET_TARGET_TYPE}" STREQUAL "INTERFACE") AND GCOV_ENABLE AND GLOBAL_INTERNAL_COMPILER_GCC)
+        target_compile_options("${ADD_TARGET_TARGET_NAME}" PUBLIC "-fprofile-arcs" "-ftest-coverage")
+        target_link_options("${ADD_TARGET_TARGET_NAME}" PUBLIC "--coverage")
+        target_link_libraries("${ADD_TARGET_TARGET_NAME}" PUBLIC "gcov")
+    endif()
+
     # CONAN PART.
     # Download/build targets defined in conanfile.txt.
     set(CONAN_FILE_PATH "${ADD_TARGET_TARGET_DIR}/conanfile.txt")

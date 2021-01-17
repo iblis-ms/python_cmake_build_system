@@ -15,6 +15,7 @@ import logging
 from .googleTest import GoogleTest
 from .sanitizers import Sanitizer
 from .utils import Utils
+from .gcovCoverage import GCovCoverage
 
 @unique
 class CppStandard(IntEnum):
@@ -51,6 +52,7 @@ class BuildSystem:
         
         self.gtest = GoogleTest()
         self.sanitizer = Sanitizer()
+        self.gconv = GCovCoverage()
         
     @staticmethod
     def __downloadData():
@@ -211,6 +213,7 @@ class BuildSystem:
             
         self.gtest.appendArgParse(arg_parser)
         self.sanitizer.appendArgParse(arg_parser)
+        self.gconv.appendArgParse(arg_parser)
         
         return arg_parser
         
@@ -295,6 +298,8 @@ class BuildSystem:
         cmd.extend(gtest_args)
         sanitizer_args = self.sanitizer.getCmakeDefines(self.args)
         cmd.extend(sanitizer_args)
+        gconv_args = self.gconv.getCmakeDefines(self.args)
+        cmd.extend(gconv_args)
         
         if pre_generate_fun is not None:
             if not pre_generate_fun(self.args, input_path, output_path, cmd):
@@ -336,7 +341,8 @@ class BuildSystem:
         cmd = ['ctest', '--verbose']
         cmd.extend(['-C', self.args.profile])
         return_code = Utils.run(cmd, output_path)
-        
+        if return_code == 0:
+            self.gconv.afterRunTests(self.args)
         return return_code
 
 

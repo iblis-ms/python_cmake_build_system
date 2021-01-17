@@ -93,5 +93,5 @@ class GoogleTest:
         if args.gtest_random_seed:
             cmake.append('-DGTEST_PRINT_UTF8=' + str(args.gtest_random_seed))
             
-        return cmake;
+        return cmake
         
