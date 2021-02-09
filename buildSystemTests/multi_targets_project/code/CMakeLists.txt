@@ -1,0 +1,16 @@
+
+cmake_minimum_required(VERSION 3.16)
+project(MultiTargetProject)
+include("${CMAKE_CURRENT_SOURCE_DIR}/../build/addTarget.cmake")
+
+add_subdirectory(InterfaceTarget1)
+add_subdirectory(InterfaceTarget2)
+add_subdirectory(InterfaceTarget3)
+add_subdirectory(InterfaceTarget4)
+add_subdirectory(StaticTarget1)
+add_subdirectory(StaticTarget2)
+add_subdirectory(StaticTarget3)
+add_subdirectory(SharedTarget1)
+add_subdirectory(SharedTarget2)
+add_subdirectory(ExeTarget1)
+add_subdirectory(ExeTarget2)

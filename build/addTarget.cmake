@@ -18,7 +18,7 @@
 #      TARGET_NAME "exeA"                      # - target name
 #      TARGET_TYPE "EXE"                       # - type of target: "EXE" so target is executable
 #      SRC "${SRC}"                            # - source files
-#      PRIVATE_LIBS "LibraryA"                 # - libraries to link with this target; private linking, so not visible to others
+#      PRIVATE_LINK_TARGETS "LibraryA"                 # - libraries to link with this target; private linking, so not visible to others
 #      PUBLIC_INC_DIRS "${INC_DIR}"            # - path to directories with header files
 #      PUBLIC_DEFINES "DEFINE_A" "DEFINE_AA=1" # - defines
 #   )
@@ -70,7 +70,9 @@ endfunction()
 if (NOT DEFINED GLOBAL_INTERNAL_SETUP)
     set(GLOBAL_INTERNAL_SETUP  ON  CACHE BOOL "Global setup done")
     if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-         set(GLOBAL_INTERNAL_COMPILE_OPTIONS  "-fPIC"  CACHE INTERNAL "Compilation fla: -fPIC")
+        if (NOT WIN32)
+            set(GLOBAL_INTERNAL_COMPILE_OPTIONS  "-fPIC"  CACHE INTERNAL "Compilation fla: -fPIC")
+        endif()
     endif ()
 
     if (("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU") AND ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU"))
@@ -80,8 +82,8 @@ if (NOT DEFINED GLOBAL_INTERNAL_SETUP)
     if (GCOV_ENABLE)
         initGCovConfig()
     endif ()
-    get_filename_component(BUT "${CMAKE_CURRENT_LIST_FILE}"  DIRECTORY)
-    set(GLOBAL_INTERNAL_THIS_SCRIPT_DIR  "${BUT}"  CACHE INTERNAL "This sript location")
+    get_filename_component(BUF "${CMAKE_CURRENT_LIST_FILE}"  DIRECTORY)
+    set(GLOBAL_INTERNAL_THIS_SCRIPT_DIR  "${BUF}"  CACHE INTERNAL "This sript location")
 endif ()
 
 # \brief Creates CMake groups based on folder structure. It only creates groups from folders passing recoursively and returning files that have one of given extensions.
@@ -167,8 +169,8 @@ endfunction()
 # \param[in] SRC Source files,
 # \param[in] PUBLIC_INC_DIRS Arguments to target_include_directories with PUBLIC/INTERFACE visibility,
 # \param[in] PRIVATE_INC_DIRS Arguments to target_include_directories with PRIVATE visibility,
-# \param[in] PUBLIC_LIBS Arguments to target_link_libraries with PUBLIC/INTERFACE visibility,
-# \param[in] PRIVATE_LIBS Arguments to target_link_libraries with PRIVATE visibility,
+# \param[in] PUBLIC_LINK_TARGETS Arguments to target_link_libraries with PUBLIC/INTERFACE visibility,
+# \param[in] PRIVATE_LINK_TARGETS Arguments to target_link_libraries with PRIVATE visibility,
 # \param[in] PUBLIC_DEFINES Arguments to target_compile_definitions with PUBLIC/INTERFACE visibility,
 # \param[in] PRIVATE_DEFINES Arguments to target_compile_definitions with PRIVATE visibility,
 # \param[in] RESOURCES_TO_COPY_TO_EXE_DIR Resources that shall be copied to all executable target file location that link this target,
@@ -198,8 +200,8 @@ function(AddTargetInternal)
         PUBLIC_INC_DIRS 
         PRIVATE_INC_DIRS 
         
-        PUBLIC_LIBS 
-        PRIVATE_LIBS 
+        PUBLIC_LINK_TARGETS 
+        PRIVATE_LINK_TARGETS 
         
         PUBLIC_DEFINES
         PRIVATE_DEFINES
@@ -230,8 +232,8 @@ function(AddTargetInternal)
         logDebug("PUBLIC_INC_DIRS=${ADD_TARGET_PUBLIC_INC_DIRS}")
         logDebug("PRIVATE_INC_DIRS=${ADD_TARGET_PRIVATE_INC_DIRS}")
         
-        logDebug("PUBLIC_LIBS=${ADD_TARGET_PUBLIC_LIBS}")
-        logDebug("PRIVATE_LIBS=${ADD_TARGET_PRIVATE_LIBS}")
+        logDebug("PUBLIC_LINK_TARGETS=${ADD_TARGET_PUBLIC_LINK_TARGETS}")
+        logDebug("PRIVATE_LINK_TARGETS=${ADD_TARGET_PRIVATE_LINK_TARGETS}")
         
         logDebug("PUBLIC_DEFINES=${ADD_TARGET_PUBLIC_DEFINES}")
         logDebug("PRIVATE_DEFINES=${ADD_TARGET_PRIVATE_DEFINES}")
@@ -252,7 +254,8 @@ function(AddTargetInternal)
         logDebug("--------------------------------------------------------------")
     endif ()
 
-    set(ADD_TARGET_SRC "${ADD_TARGET_SRC}" "${ADD_TARGET_TEST_SRC}")
+  #  set(ADD_TARGET_SRC "${ADD_TARGET_SRC}" "${ADD_TARGET_TEST_SRC}")
+    set(ALL_SRC "${ADD_TARGET_SRC}" "${ADD_TARGET_TEST_SRC}")
 
     if (ADD_TARGET_TEST_TARGET) # only test targets can be excluded/include by match pattern via this script.
         if (ADD_TARGET_TEST_TARGET_INCLUDE)
@@ -266,6 +269,23 @@ function(AddTargetInternal)
         if (ADD_TARGET_TEST_TARGET_EXCLUDE)
             if ("${ADD_TARGET_TARGET_NAME}" MATCHES "${ADD_TARGET_TEST_TARGET_EXCLUDE}")
                 logStatus("Target ${ADD_TARGET_TARGET_NAME} matches to regex: ${ADD_TARGET_TEST_TARGET_EXCLUDE}, so the test target wouldn't be built.")
+                return()
+            endif ()
+        endif ()
+    endif ()
+
+    if (ADD_TARGET_BENCHMARK_TARGET) # only benchmark targets can be excluded/include by match pattern via this script.
+        if (ADD_TARGET_BENCHMARK_TARGET_INCLUDE)
+            # check if include match pattern was defined and this target match to the pattern. If not match, don't create the target.
+            if (NOT "${ADD_TARGET_TARGET_NAME}" MATCHES "${ADD_TARGET_BENCHMARK_TARGET_INCLUDE}")
+                logStatus("Target ${ADD_TARGET_TARGET_NAME} doesn't match to regex: ${ADD_TARGET_BENCHMARK_TARGET_INCLUDE}, so the benchmark target wouldn't be built.")
+                return()
+            endif ()
+        endif ()
+        # check if exclude match pattern was defined and this target match to the pattern. If match, don't create the target.
+        if (ADD_TARGET_BENCHMARK_TARGET_EXCLUDE)
+            if ("${ADD_TARGET_TARGET_NAME}" MATCHES "${ADD_TARGET_BENCHMARK_TARGET_EXCLUDE}")
+                logStatus("Target ${ADD_TARGET_TARGET_NAME} matches to regex: ${ADD_TARGET_BENCHMARK_TARGET_EXCLUDE}, so the benchmark target wouldn't be built.")
                 return()
             endif ()
         endif ()
@@ -286,9 +306,9 @@ function(AddTargetInternal)
    
     # create groups from source files.
     addSrcGroupsInternal(ROOT_PATH "${ADD_TARGET_TARGET_DIR}" 
-        PATHS_TO_SRCS "${ADD_TARGET_SRC}")
+        PATHS_TO_SRCS "${ALL_SRC}")
         
-    set(SRC "${ADD_TARGET_SRC}" "${PUBLIC_INCS_TO_SRC}" "${PRIVATE_INCS_TO_SRC}")
+    set(SRC "${ALL_SRC}" "${PUBLIC_INCS_TO_SRC}" "${PRIVATE_INCS_TO_SRC}")
     
     if ("${ADD_TARGET_TARGET_TYPE}" STREQUAL "EXE")
         # create executable target.
@@ -350,12 +370,11 @@ function(AddTargetInternal)
     else ()
         message(FATAL_ERROR " Incorrect TARGET_TYPE=${ADD_TARGET_TARGET_TYPE} for TARGET_NAME=${ADD_TARGET_TARGET_NAME} from location ${ADD_TARGET_TARGET_DIR}")
     endif ()
-    
     if ("${ADD_TARGET_TARGET_TYPE}" STREQUAL "INTERFACE")
         # interface target has its own token INTERFACE for target commands.
         target_include_directories("${ADD_TARGET_TARGET_NAME}" INTERFACE "${ADD_TARGET_PUBLIC_INC_DIRS}")
         
-        target_link_libraries("${ADD_TARGET_TARGET_NAME}" INTERFACE "${ADD_TARGET_PUBLIC_LIBS}")
+        target_link_libraries("${ADD_TARGET_TARGET_NAME}" INTERFACE "${ADD_TARGET_PUBLIC_LINK_TARGETS}")
         
         target_compile_definitions("${ADD_TARGET_TARGET_NAME}" INTERFACE "${ADD_TARGET_PUBLIC_DEFINES}" "${GLOBAL_COMPILE_DEFINES}")
         
@@ -363,21 +382,33 @@ function(AddTargetInternal)
 
         target_compile_options("${ADD_TARGET_TARGET_NAME}" INTERFACE "${ADD_TARGET_PUBLIC_COMPILE_OPTIONS}")
 
+		if(MSVC)
+			target_compile_options("${ADD_TARGET_TARGET_NAME}" INTERFACE "/Zc:__cplusplus")
+		endif()
     else()
         target_include_directories("${ADD_TARGET_TARGET_NAME}" PUBLIC "${ADD_TARGET_PUBLIC_INC_DIRS}")
         target_include_directories("${ADD_TARGET_TARGET_NAME}" PRIVATE "${ADD_TARGET_PRIVATE_INC_DIRS}")
         
-        target_link_libraries("${ADD_TARGET_TARGET_NAME}" PUBLIC "${ADD_TARGET_PUBLIC_LIBS}")
-        target_link_libraries("${ADD_TARGET_TARGET_NAME}" PRIVATE "${ADD_TARGET_PRIVATE_LIBS}")
+        target_link_libraries("${ADD_TARGET_TARGET_NAME}" PUBLIC "${ADD_TARGET_PUBLIC_LINK_TARGETS}")
+        target_link_libraries("${ADD_TARGET_TARGET_NAME}" PRIVATE "${ADD_TARGET_PRIVATE_LINK_TARGETS}")
         
-        target_compile_definitions("${ADD_TARGET_TARGET_NAME}" PUBLIC "${ADD_TARGET_PUBLIC_DEFINES}" "${GLOBAL_COMPILE_DEFINES}")
+        if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+            set(ADD_TARGET_BUILD_TYPE "ADD_TARGET_RELEASE=1")
+        else()
+            set(ADD_TARGET_BUILD_TYPE "ADD_TARGET_DEBUG=1")
+        endif()
+        target_compile_definitions("${ADD_TARGET_TARGET_NAME}" PUBLIC "${ADD_TARGET_PUBLIC_DEFINES}" "${GLOBAL_COMPILE_DEFINES}" "${ADD_TARGET_BUILD_TYPE}")
         target_compile_definitions("${ADD_TARGET_TARGET_NAME}" PRIVATE "${ADD_TARGET_PRIVATE_DEFINES}" "${GLOBAL_COMPILE_DEFINES}")
         
         target_link_options("${ADD_TARGET_TARGET_NAME}" PUBLIC "${ADD_TARGET_PUBLIC_LINK_OPTIONS}")
         target_link_options("${ADD_TARGET_TARGET_NAME}" PRIVATE "${ADD_TARGET_PRIVATE_LINK_OPTIONS}")
 
         target_compile_options("${ADD_TARGET_TARGET_NAME}" PUBLIC "${ADD_TARGET_PUBLIC_COMPILE_OPTIONS}" "${GLOBAL_INTERNAL_COMPILE_OPTIONS}")
-        target_compile_options("${ADD_TARGET_TARGET_NAME}" PRIVATE "${ADD_TARGET_PRIVATE_COMPILE_OPTIONS}" "${GLOBAL_INTERNAL_COMPILE_OPTIONS}")
+        target_compile_options("${ADD_TARGET_TARGET_NAME}" PRIVATE "${ADD_TARGET_PRIVATE_COMPILE_OPTIONS}" "${GLOBAL_INTERNAL_COMPILE_OPTIONS}" )
+
+		if(MSVC)
+			target_compile_options("${ADD_TARGET_TARGET_NAME}" PUBLIC "/Zc:__cplusplus")
+		endif()
     endif()
     
     if (ADD_TARGET_TEST_TARGET)
@@ -401,11 +432,14 @@ function(AddTargetInternal)
             add_test(NAME "${ADD_TARGET_TARGET_NAME}" COMMAND sh -c "${ADD_TARGET_TEST_COMMAND}" ${GTEST_ARGS_LIST} WORKING_DIRECTORY "$<TARGET_FILE_DIR:${ADD_TARGET_TARGET_NAME}>")
             
         else()
-            add_test(NAME "${ADD_TARGET_TARGET_NAME}" COMMAND "${ADD_TARGET_TEST_COMMAND}" ${GTEST_ARGS_LIST} WORKING_DIRECTORY "$<TARGET_FILE_DIR:${ADD_TARGET_TARGET_NAME}>")
+            add_test(NAME "${ADD_TARGET_TARGET_NAME}" 
+                COMMAND  ${ADD_TARGET_TEST_COMMAND} ${GTEST_ARGS_LIST}
+                WORKING_DIRECTORY "$<TARGET_FILE_DIR:${ADD_TARGET_TARGET_NAME}>"
+                )
         endif()
 
         if (GCOV_ENABLE AND GLOBAL_INTERNAL_COMPILER_GCC)
-            foreach(SRC_ITEM IN LISTS ADD_TARGET_TEST_SRC)
+            foreach(SRC_ITEM IN LISTS ADD_TARGET_SRC)
                 set(GCOV_CONFIG "${GCOV_CONFIG}filter = ${SRC_ITEM}\n")
             endforeach()
 
@@ -438,13 +472,14 @@ function(AddTargetInternal)
     
     if (NOT "${ADD_TARGET_TARGET_TYPE}" STREQUAL "INTERFACE")
         # add compiler and linker flags required by sanitizers.
+
         if (ADD_TARGET_CLANG_ADDRESS_SANITIZER)
             target_link_options("${ADD_TARGET_TARGET_NAME}" PUBLIC "-fsanitize=address" "-fno-omit-frame-pointer")
             target_compile_options("${ADD_TARGET_TARGET_NAME}" PUBLIC "-fsanitize=address" "-fno-omit-frame-pointer")
         endif ()
         if (ADD_TARGET_CLANG_MEMORY_SANITIZER)
-            target_link_options("${ADD_TARGET_TARGET_NAME}" PUBLIC "-fsanitize=memory" "-fno-omit-frame-pointer" "-fno-optimize-sibling-calls")
-            target_compile_options("${ADD_TARGET_TARGET_NAME}" PUBLIC "-fsanitize=memory" "-fno-omit-frame-pointer" "-fno-optimize-sibling-calls")
+            target_link_options("${ADD_TARGET_TARGET_NAME}" PUBLIC "-fsanitize=memory" "-fsanitize-memory-track-origins" "-fno-omit-frame-pointer" "-fno-optimize-sibling-calls")
+            target_compile_options("${ADD_TARGET_TARGET_NAME}" PUBLIC "-fsanitize=memory" "-fsanitize-memory-track-origins" "-fno-omit-frame-pointer" "-fno-optimize-sibling-calls")
         endif ()
         if (ADD_TARGET_CLANG_THREAD_SANITIZER)
             target_link_options("${ADD_TARGET_TARGET_NAME}" PUBLIC "-fsanitize=thread" "-fno-omit-frame-pointer")
@@ -462,7 +497,7 @@ function(AddTargetInternal)
     # similar case as RES_COPY_TO_EXE_DIR but all resources have destination point.
     set(RES_COPY ${ADD_TARGET_RESOURCES_TO_COPY})
 
-    list(APPEND LIBS ${ADD_TARGET_PUBLIC_LIBS} ${ADD_TARGET_PRIVATE_LIBS})
+    list(APPEND LIBS ${ADD_TARGET_PUBLIC_LINK_TARGETS} ${ADD_TARGET_PRIVATE_LINK_TARGETS})
 
     list(APPEND ALL_LIBS "${LIBS}")
     foreach(LIB IN LISTS LIBS)
@@ -643,15 +678,46 @@ macro(AddTarget)
 endmacro()
 
 # \brief Creates target. See comment of AddTargetInternal.
+macro(AddExeTarget)
+
+    AddTargetInternal(TARGET_DIR "${CMAKE_CURRENT_SOURCE_DIR}" TARGET_LINE "${CMAKE_CURRENT_LIST_LINE}" TARGET_TYPE "EXE" ${ARGV})
+    
+endmacro()
+
+# \brief Creates target. See comment of AddTargetInternal.
+macro(AddStaticLibTarget)
+
+    AddTargetInternal(TARGET_DIR "${CMAKE_CURRENT_SOURCE_DIR}" TARGET_LINE "${CMAKE_CURRENT_LIST_LINE}" TARGET_TYPE "STATIC" ${ARGV})
+    
+endmacro()
+
+
+# \brief Creates target. See comment of AddTargetInternal.
+macro(AddSharedLibTarget)
+
+    AddTargetInternal(TARGET_DIR "${CMAKE_CURRENT_SOURCE_DIR}" TARGET_LINE "${CMAKE_CURRENT_LIST_LINE}" TARGET_TYPE "SHARED" ${ARGV})
+    
+endmacro()
+
+
+macro(AddInterfaceTarget)
+
+    AddTargetInternal(TARGET_DIR "${CMAKE_CURRENT_SOURCE_DIR}" TARGET_LINE "${CMAKE_CURRENT_LIST_LINE}" TARGET_TYPE "INTERFACE" ${ARGV})
+    
+endmacro()
+
+
+
+# \brief Creates target. See comment of AddTargetInternal.
 macro(AddTestTarget)
 
-    AddTargetInternal(TARGET_DIR "${CMAKE_CURRENT_SOURCE_DIR}" TARGET_LINE "${CMAKE_CURRENT_LIST_LINE}" ${ARGV} TEST_TARGET)
+    AddTargetInternal(TARGET_DIR "${CMAKE_CURRENT_SOURCE_DIR}" TARGET_LINE "${CMAKE_CURRENT_LIST_LINE}" TARGET_TYPE "EXE"  ${ARGV} TEST_TARGET)
     
 endmacro()
 
 # \brief Creates target. See comment of AddTargetInternal.
 macro(AddBenchmarkTarget)
 
-    AddTargetInternal(TARGET_DIR "${CMAKE_CURRENT_SOURCE_DIR}" TARGET_LINE "${CMAKE_CURRENT_LIST_LINE}" ${ARGV} BENCHMARK_TARGET)
+    AddTargetInternal(TARGET_DIR "${CMAKE_CURRENT_SOURCE_DIR}" TARGET_LINE "${CMAKE_CURRENT_LIST_LINE}" TARGET_TYPE "EXE" ${ARGV} BENCHMARK_TARGET)
     
 endmacro()
