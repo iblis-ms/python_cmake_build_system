@@ -87,7 +87,7 @@ class TestConfig:
         if ninja_support:
             clang_gcc_generators.extend(['Ninja', 'Eclipse CDT4 - Ninja'])
 
-        clang_gcc_compilers = [TestConfig.config_data_input_clang, TestConfig.config_data_input_gcc] 
+        clang_gcc_compilers = [TestConfig.config_data_input_gcc] # TestConfig.config_data_input_clang, 
         profiles = ['Debug', 'Release']
         
         output_config = []
