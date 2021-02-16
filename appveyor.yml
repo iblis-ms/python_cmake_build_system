@@ -1,0 +1,13 @@
+image:
+- Visual Studio 2019
+
+
+  
+install:
+  - pip install conan
+  
+build: off
+
+
+test_script:
+    - cd buildSystemTests && py -3 travisTests.py
