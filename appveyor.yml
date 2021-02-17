@@ -4,9 +4,9 @@ image:
 
   
 install:
-  - pip install conan
-  - pip install parameterized
-  - pip install gcovr
+  - pip3 install conan
+  - pip3 install parameterized
+  - pip3 install gcovr
   
 build: off
 
