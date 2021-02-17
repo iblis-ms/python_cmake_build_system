@@ -43,15 +43,15 @@ class GCovCoverage:
         
         cmake.append('-DGCOV_ENABLE=1')
         if not args.gcov_config_file:
-            args.gcov_config_file = os.path.join(args.output, "gcov_config.txt")
-        cmake.append('-DGCOV_CONF_PATH=' + str(args.gcov_config_file))
+            args.gcov_config_file = str(os.path.join(args.output, "gcov_config.txt")).replace('\\', '/')
+        cmake.append('-DGCOV_CONF_PATH=' + str(args.gcov_config_file).replace('\\', '/'))
             
         if not args.gcov_output:
-            folders = os.path.join(args.output, "code_ceverage")
+            folders = os.path.join(args.output, "code_coverage")
             os.makedirs(folders, exist_ok=True)
             args.gcov_output = os.path.join(folders, "index.html")
 
-        cmake.append('-DGCOV_OUTPUT_PATH=' + str(args.gcov_output))
+        cmake.append('-DGCOV_OUTPUT_PATH=' + str(args.gcov_output).replace('\\', '/'))
         
         return cmake
 

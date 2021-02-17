@@ -1,0 +1,3 @@
+
+add_subdirectory(FactorialIterativeTest)
+add_subdirectory(FactorialRecursiveTest)

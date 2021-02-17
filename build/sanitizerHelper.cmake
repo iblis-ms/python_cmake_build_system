@@ -38,5 +38,5 @@ function(AddTargetTestRunCommand_Valgrind TEST_TARGET_NAME)
 endfunction()
 
 function(AddTargetTestRunCommand_DrMemory TEST_TARGET_NAME)
-    set(ADD_TARGET_TEST_COMMAND "drmemory" "--" "$<TARGET_FILE:${TEST_TARGET_NAME}>" PARENT_SCOPE)
+    set(ADD_TARGET_TEST_COMMAND "drmemory.exe" "-ignore_kernel" "-show_reachable" "-batch" "--" "$<TARGET_FILE:${TEST_TARGET_NAME}>" PARENT_SCOPE)
 endfunction()

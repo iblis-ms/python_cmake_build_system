@@ -182,6 +182,22 @@ class BuildSystem:
             help='Exclude regex for test target.'
             )
         arg_parser.add_argument(
+            '-bench_only',
+            '--run_benchmarks_only',
+            help='Run benchmarks only.',
+            action="store_true"
+            )
+        arg_parser.add_argument(
+            '-bench_inc',
+            '--benchmark_include',
+            help='Include regex for benchmark target.'
+            )
+        arg_parser.add_argument(
+            '-bench_exc',
+            '--benchmark_exclude',
+            help='Exclude regex for benchmark target.'
+            )
+        arg_parser.add_argument(
             '-log_out',
             '--log_output_file',
             help='Log output file'
@@ -281,7 +297,11 @@ class BuildSystem:
         if self.args.test_include is not None:
             cmd.append('-DADD_TARGET_TEST_TARGET_INCLUDE=' + self.args.test_include)
         if self.args.test_exclude is not None:
-            cmd.append('-DADD_TARGET_TEST_TARGET_EXCLUDE=' + self.args.test_include)
+            cmd.append('-DADD_TARGET_TEST_TARGET_EXCLUDE=' + self.args.test_exclude)
+        if self.args.benchmark_include is not None:
+            cmd.append('-DADD_TARGET_BENCHMARK_TARGET_INCLUDE=' + self.args.benchmark_include)
+        if self.args.benchmark_exclude is not None:
+            cmd.append('-DADD_TARGET_BENCHMARK_TARGET_EXCLUDE=' + self.args.benchmark_exclude)
             
         cmd.append('--log-level=' + str(self.args.cmake_log_level))
         cmd.append('-DLOG_LEVEL=' + str(self.args.cmake_log_level))
@@ -357,7 +377,7 @@ class BuildSystem:
             input_path = self.args.input
         if output_path is None:
             output_path = self.args.output
-        if not self.args.run_tests_only:
+        if not self.args.run_tests_only and not self.args.run_benchmarks_only:
             generate_result = self.generate(input_path, output_path)
             if generate_result != 0:
                 return False
@@ -372,7 +392,9 @@ class BuildSystem:
             test_result = self.runTests(output_path)
             if test_result != 0:
                 return False
-        self.benchmark.afterRunTests(self.args)
+        
+        if (self.args.run_tests_only and self.args.run_benchmarks_only) or not self.args.run_tests_only: 
+            self.benchmark.afterRunTests(self.args)
 
         return True
 

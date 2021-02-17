@@ -1,0 +1,13 @@
+
+
+AddInterfaceTarget(
+    TARGET_NAME "InterfaceTarget1"
+    PUBLIC_INC_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/public"
+
+    RESOURCES_TO_COPY_TO_EXE_DIR 
+    "${CMAKE_CURRENT_SOURCE_DIR}/res_interface1_a" 
+    "${CMAKE_CURRENT_SOURCE_DIR}/other_res_interface1/other_res_interface1_a.txt"
+    RESOURCES_TO_COPY 
+    "${CMAKE_CURRENT_SOURCE_DIR}/res_interface1_b" TO "${CMAKE_BINARY_DIR}/InterfaceTarget1/res"
+    "${CMAKE_CURRENT_SOURCE_DIR}/other_res_interface1/abc" TO "${CMAKE_BINARY_DIR}/InterfaceTarget1/res"
+)
