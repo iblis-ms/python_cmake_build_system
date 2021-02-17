@@ -5,9 +5,11 @@ image:
   
 install:
   - pip install conan
+  - pip install parameterized
+  - pip install gcovr
   
 build: off
 
 
 test_script:
-    - cd buildSystemTests && py -3 travisTests.py
+    - cd buildSystemTests && py -3 runTests.py
