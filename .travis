@@ -23,4 +23,5 @@ before_install:
 
 
 script:
-- cd buildSystemTests && python3 runTests.py
+- if [ "$TRAVIS_OS_NAME" = "linux" ];  cd buildSystemTests && ./travis_linux.sh ; fi
+- if [ "$TRAVIS_OS_NAME" = "osx" ];  cd buildSystemTests && ./travis_macos.sh ; fi

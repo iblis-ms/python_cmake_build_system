@@ -53,14 +53,15 @@ class ParameterTestBase(unittest.TestCase):
         
     def setUpWithConfig(self, test_config):
         self._test_config = test_config
-        print(f'----------------------------------------------')
-        print(f'Generator: {test_config.generator}')
-        print(f'C compiler: {test_config.c_compiler}')
-        print(f'CXX compiler: {test_config.cxx_compiler}')
-        print(f'Build type: {test_config.build_type}')
-        print(f'C++ std: {test_config.cxx_std}')
-        print(f'Output: {test_config.expected_txt_array}')
-        print(f'----------------------------------------------')
+        logger = logging.getLogger("BuildSystemTest")
+        logger.info(f'----------------------------------------------')
+        logger.info(f'Generator: {test_config.generator}')
+        logger.info(f'C compiler: {test_config.c_compiler}')
+        logger.info(f'CXX compiler: {test_config.cxx_compiler}')
+        logger.info(f'Build type: {test_config.build_type}')
+        logger.info(f'C++ std: {test_config.cxx_std}')
+        logger.info(f'Output: {test_config.expected_txt_array}')
+        logger.info(f'----------------------------------------------')
         
         test_dir_path = self.getTestDir()
         output_path = self.getTestOutputDir(test_config)

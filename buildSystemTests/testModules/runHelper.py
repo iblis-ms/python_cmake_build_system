@@ -3,6 +3,7 @@
 import os
 import shutil
 
+import time
 
 from .utils import Utils
 from .sysOp import SysOp
@@ -15,14 +16,15 @@ class RunHelper:
         self._build_script_dir = os.path.join(self._current_dir, '..')
 
     def clean(self):
+        time.sleep(1)
         build_script_path = os.path.join(self._test_dir_path, 'build.py')
         if os.path.isfile(build_script_path):
             os.remove(build_script_path)
         build_path = os.path.join(self._test_dir_path, 'build')
         if os.path.isdir(build_path):
-            shutil.rmtree(build_path)
+            shutil.rmtree(build_path, ignore_errors=True)
         if os.path.isdir(self._output_path):
-            shutil.rmtree(self._output_path)
+            shutil.rmtree(self._output_path, ignore_errors=True)
         
     def copyBuildScripts(self):
         self.clean()
