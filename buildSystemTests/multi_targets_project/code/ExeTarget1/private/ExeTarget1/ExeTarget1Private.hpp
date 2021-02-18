@@ -3,8 +3,16 @@
 
 #include <iostream>
 
+/**
+ * @brief Executable target 1 class.
+ * 
+ */
 struct CExeTarget1Private
 {
+	/**
+	 * @brief Function.
+	 * 
+	 */
 	void fun();
 };
 

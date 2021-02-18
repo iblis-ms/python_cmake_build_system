@@ -1,5 +1,10 @@
 #include <iostream>
 
+/**
+ * @brief Get the name of compiler
+ * 
+ * @return const char* name of compiler
+ */
 const char* getCompiler()
 {
 #if defined(__clang__)
@@ -13,6 +18,11 @@ const char* getCompiler()
 #endif
 }
 
+/**
+ * @brief Get the information if the build was Release or Debug.
+ * 
+ * @return const char* build profile.
+ */
 const char* getProfile()
 {
 #if ((ADD_TARGET_RELEASE == 1) && (!defined(ADD_TARGET_DEBUG)))
@@ -24,6 +34,11 @@ const char* getProfile()
 #endif 
 }
 
+/**
+ * @brief Get C++ standard
+ * 
+ * @return const char* C++ standard.
+ */
 const char* getCppStd()
 {
 
@@ -42,9 +57,6 @@ const char* getCppStd()
 #endif
 }
 
-#if __cplusplus > 201703L
-  // C++20 code
-#endif
 int main()
 {
 	std::cout << __cplusplus << std::endl;
