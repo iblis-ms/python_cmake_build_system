@@ -633,6 +633,12 @@ def setupLogger():
     consoleLoggerhandler.setFormatter(consoleFormatter)
     logger.addHandler(consoleLoggerhandler)
     logger.setLevel(logging.INFO)
+    
+    fileLoggerhandler = logging.FileHandler(os.path.join(os.getcwd(), 'output.txt'))
+    fileLoggerhandler.setLevel(logging.INFO)
+    fileFormatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    fileLoggerhandler.setFormatter(fileFormatter)
+    logger.addHandler(fileLoggerhandler)
 
 def main():
     setupLogger()
