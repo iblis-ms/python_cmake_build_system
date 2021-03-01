@@ -17,6 +17,7 @@ from .sanitizers import Sanitizer
 from .utils import Utils
 from .gcovCoverage import GCovCoverage
 from .benchmark import Benchmark
+from .doxygen import Doxygen
 
 @unique
 class CppStandard(IntEnum):
@@ -55,6 +56,7 @@ class BuildSystem:
         self.sanitizer = Sanitizer()
         self.gconv = GCovCoverage()
         self.benchmark = Benchmark()
+        self.doxygen = Doxygen()
         
     @staticmethod
     def __downloadData():
@@ -233,6 +235,7 @@ class BuildSystem:
         self.sanitizer.appendArgParse(arg_parser)
         self.gconv.appendArgParse(arg_parser)
         self.benchmark.appendArgParse(arg_parser)
+        self.doxygen.appendArgParse(arg_parser)
 
         return arg_parser
         
@@ -377,7 +380,7 @@ class BuildSystem:
             input_path = self.args.input
         if output_path is None:
             output_path = self.args.output
-        if not self.args.run_tests_only and not self.args.run_benchmarks_only:
+        if not self.args.run_tests_only and not self.args.run_benchmarks_only and not self.args.run_doxygen_only:
             generate_result = self.generate(input_path, output_path)
             if generate_result != 0:
                 return False
@@ -393,9 +396,11 @@ class BuildSystem:
             if test_result != 0:
                 return False
         
-        if (self.args.run_tests_only and self.args.run_benchmarks_only) or not self.args.run_tests_only: 
+        if (self.args.run_tests_only and self.args.run_benchmarks_only) or not self.args.run_tests_only and not self.args.run_doxygen_only: 
             self.benchmark.afterRunTests(self.args)
 
+        if self.args.doxygen or self.args.run_doxygen_only:
+            self.doxygen.run(self.args)
         return True
 
     def simpleRun(self, app_name):

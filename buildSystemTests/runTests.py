@@ -607,7 +607,24 @@ class TestSanitizerIssue(TestBase):
 
         self.assertTrue('UndefinedBehaviorSanitizer: ' in output)
 
-        
+class TestDoxygen(TestBase):
+    
+    def getTestDir(self):
+        return os.path.join(os.getcwd(), 'multi_targets_project')
+
+    def test_doxygen(self):
+        output_dox = os.path.join(self.getTestDir(), 'output_dox')
+        shutil.rmtree(output_dox, ignore_errors=True)
+        return_code, output = self.test.run([
+            '-dox_only', 
+            '--doxygen_configuration', os.path.join(self.getTestDir(), 'Doxyfile_config')], 
+            collect_output = True)
+        doxygen_html = os.path.join(output_dox, 'html', 'index.html')
+        self.assertTrue(os.path.isfile(doxygen_html))
+        self.assertEqual(return_code, 0)
+
+
+
 def setupLogger():
     logger = logging.getLogger("BuildSystemTest")
     consoleLoggerhandler = logging.StreamHandler()
@@ -616,6 +633,12 @@ def setupLogger():
     consoleLoggerhandler.setFormatter(consoleFormatter)
     logger.addHandler(consoleLoggerhandler)
     logger.setLevel(logging.INFO)
+    
+    fileLoggerhandler = logging.FileHandler(os.path.join(os.getcwd(), 'output.txt'))
+    fileLoggerhandler.setLevel(logging.INFO)
+    fileFormatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    fileLoggerhandler.setFormatter(fileFormatter)
+    logger.addHandler(fileLoggerhandler)
 
 def main():
     setupLogger()
