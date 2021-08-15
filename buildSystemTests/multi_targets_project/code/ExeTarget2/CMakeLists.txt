@@ -11,4 +11,7 @@ AddExeTarget(
     RESOURCES_TO_COPY 
     "${CMAKE_CURRENT_SOURCE_DIR}/res_exe2_b" TO "${CMAKE_BINARY_DIR}/ExeTarget2/res"
     "${CMAKE_CURRENT_SOURCE_DIR}/other_res_exe2/abc" TO "${CMAKE_BINARY_DIR}/ExeTarget2/res"
+
+    INSTALL_TARGET_DIR "output_install/ExeTarget2"
+    INSTALL_HEADERS_DIR "output_install/ExeTarget2/headers"
 )

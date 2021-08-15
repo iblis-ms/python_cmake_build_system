@@ -192,6 +192,8 @@ function(AddTargetInternal)
         TARGET_TYPE 
         TARGET_DIR
         TARGET_OUTPUT_DIR
+        INSTALL_TARGET_DIR 
+        INSTALL_HEADERS_DIR
         ) 
         
     set(MULTI_ARGUMENT_PATTERN 
@@ -254,7 +256,6 @@ function(AddTargetInternal)
         logDebug("--------------------------------------------------------------")
     endif ()
 
-  #  set(ADD_TARGET_SRC "${ADD_TARGET_SRC}" "${ADD_TARGET_TEST_SRC}")
     set(ALL_SRC "${ADD_TARGET_SRC}" "${ADD_TARGET_TEST_SRC}")
 
     if (ADD_TARGET_TEST_TARGET) # only test targets can be excluded/include by match pattern via this script.
@@ -303,7 +304,7 @@ function(AddTargetInternal)
         PATHS_TO_DIRS "${ADD_TARGET_PRIVATE_INC_DIRS}" 
         EXTENSIONS "hpp" "h"
         OUTPUT_FILES PRIVATE_INCS_TO_SRC) # found header files will be in PRIVATE_INCS_TO_SRC variable.
-   
+
     # create groups from source files.
     addSrcGroupsInternal(ROOT_PATH "${ADD_TARGET_TARGET_DIR}" 
         PATHS_TO_SRCS "${ALL_SRC}")
@@ -579,7 +580,7 @@ function(AddTargetInternal)
             endforeach ()
         endif()
 
-        # copy dynanic libs 
+        # copy dynamic libs 
         foreach(LIB IN LISTS ${ADD_TARGET_TARGET_NAME}_PROPERTY_ALL_LIBS)
             get_target_property(OUTPUT_TYPE ${LIB} TYPE)
             if ("${OUTPUT_TYPE}" STREQUAL "SHARED_LIBRARY")
@@ -599,6 +600,33 @@ function(AddTargetInternal)
         )
 
     endif()
+
+    if (ADD_TARGET_INSTALL_TARGET_DIR)
+        if (NOT ADD_TARGET_INSTALL_HEADERS_DIR)
+            logError("Missing argument: INSTALL_HEADERS_DIR for target: ${ADD_TARGET_TARGET_NAME}")
+        endif ()
+
+        install(TARGETS ${ADD_TARGET_TARGET_NAME} 
+            PUBLIC_HEADER DESTINATION "${ADD_TARGET_INSTALL_HEADERS_DIR}"
+            ARCHIVE DESTINATION "${ADD_TARGET_INSTALL_TARGET_DIR}"
+            LIBRARY DESTINATION "${ADD_TARGET_INSTALL_TARGET_DIR}"
+            RUNTIME DESTINATION "${ADD_TARGET_INSTALL_TARGET_DIR}"
+            OBJECTS DESTINATION "${ADD_TARGET_INSTALL_TARGET_DIR}"
+            FRAMEWORK DESTINATION "${ADD_TARGET_INSTALL_TARGET_DIR}"
+            BUNDLE DESTINATION "${ADD_TARGET_INSTALL_TARGET_DIR}"
+            PRIVATE_HEADER DESTINATION "${ADD_TARGET_INSTALL_HEADERS_DIR}"
+            PUBLIC_HEADER DESTINATION "${ADD_TARGET_INSTALL_HEADERS_DIR}"
+            RESOURCE DESTINATION "${ADD_TARGET_INSTALL_TARGET_DIR}/RESOURCE"
+            INCLUDES DESTINATION "${ADD_TARGET_INSTALL_HEADERS_DIR}"
+        )
+        
+        foreach(INC_DIR IN LISTS ADD_TARGET_PUBLIC_INC_DIRS)
+            install(DIRECTORY "${INC_DIR}" DESTINATION "${ADD_TARGET_INSTALL_HEADERS_DIR}"
+                FILES_MATCHING PATTERN "*.h")
+            install(DIRECTORY "${INC_DIR}" DESTINATION "${ADD_TARGET_INSTALL_HEADERS_DIR}"
+                FILES_MATCHING PATTERN "*.hpp")
+        endforeach()
+    endif ()
 
 endfunction()
 

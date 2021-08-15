@@ -24,6 +24,7 @@ This build system supports:
 - configurable input (source code ) folder and output folders
 - static, shared, interface target are treated in the same - you don't need to worry if put PUBLIC or INTERFACE token
 - creating Doxygen documentation
+- support for CPack to create packages
 - and many, many use cases. 
 
 
@@ -59,8 +60,7 @@ optional arguments:
   -h, --help            show this help message and exit
   -p {Release,Debug}, --profile {Release,Debug}
                         Build type.
-  -c, --clean           Clean build - remove output directory before
-                        generation.
+  -c, --clean           Clean build - remove output directory before generation.
   -g GENERATOR, --generator GENERATOR
                         CMake generator.
   -go, --generate_only  Generate only.
@@ -99,6 +99,10 @@ optional arguments:
                         Input folder
   -cm_log {ERROR,WARNING,NOTICE,STATUS,VERBOSE,DEBUG,TRACE}, --cmake_log_level {ERROR,WARNING,NOTICE,STATUS,VERBOSE,DEBUG,TRACE}
                         CMake Log level
+  -install_p INSTALL_PREFIX, --install_prefix INSTALL_PREFIX
+                        Input folder
+  -install, --install   Run CMake install.
+  -pack, --pack         Run CPack to pack aftifacts.
   --gtest_filter GTEST_FILTER
                         GTest: Filter regex for running test cases.
   --gtest_color {no,yes,auto}
@@ -121,8 +125,7 @@ optional arguments:
                         Memory sanitizer like: Dr Memory, Valgrind
   -gcov, --gcov         GCov: enable
   -gcov_p_t, --gcov_per_target
-                        GCov: TODO: show code coverage per target not entire
-                        project
+                        GCov: TODO: show code coverage per target not entire project
   -gcov_conf GCOV_CONFIG_FILE, --gcov_config_file GCOV_CONFIG_FILE
                         GCov: Path to configuration file
   -gcov_o GCOV_OUTPUT, --gcov_output GCOV_OUTPUT
@@ -194,6 +197,8 @@ addTarget(
     PRIVATE_COMPILE_OPTIONS "-fno-omit-frame-pointer"   # compile options
     RESOURCES_TO_COPY_TO_EXE_DIR "res.jpg" "resFolder"  # resources (files and folder) that will be copied to executable location or if given target is not executable, resources will be copied to all executable targets that link this target
     RESOURCES_TO_COPY "res.png" TO "folder/somewhere" # as RESOURCES_TO_COPY_TO_EXE_DIR but destination point is required ('TO' is also required)
+    INSTALL_TARGET_DIR "output_install"          # location where target binary will be installed
+    INSTALL_HEADERS_DIR "output_install/headers" # location where public header directories will be installed
 	)
 
 ```

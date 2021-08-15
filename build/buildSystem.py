@@ -218,7 +218,7 @@ class BuildSystem:
             default = os.path.join(current_dir, 'code'),
             help='Input folder'
             )
-           
+
         log_level = []
         for lvl in LogLevel:
             log_level.append(lvl.value)
@@ -231,6 +231,25 @@ class BuildSystem:
             default=LogLevel.STATUS.value
             )
             
+        arg_parser.add_argument(
+            '-install_p',
+            '--install_prefix',
+            help='Input folder'
+            )
+
+        arg_parser.add_argument(
+            '-install',
+            '--install',
+            help='Run CMake install.',
+            action="store_true"
+            )
+        arg_parser.add_argument(
+            '-pack',
+            '--pack',
+            help='Run CPack to pack aftifacts.',
+            action="store_true"
+            )
+
         self.gtest.appendArgParse(arg_parser)
         self.sanitizer.appendArgParse(arg_parser)
         self.gconv.appendArgParse(arg_parser)
@@ -374,6 +393,27 @@ class BuildSystem:
             self.gconv.afterRunTests(self.args)
         return return_code
 
+    def runInstall(self, output_path, prefix = None):
+        cmd = ['cmake', '--install', '.']
+        if prefix is not None:
+            cmd.extend(['--prefix', prefix])
+        output_file_path = os.path.join(self.args.output, "installOutput.txt")
+        return_code = Utils.run(cmd, output_path, output_file_path = output_file_path)
+        return return_code
+
+    def runPack(self, output_path):
+
+        cmd = ['cpack', '--config', 'CPackConfig.cmake']
+        output_file_path = os.path.join(self.args.output, "packOutput.txt")
+        return_code = Utils.run(cmd, output_path, output_file_path = output_file_path)
+        if return_code != 0:
+            return return_code
+
+        cmd = ['cpack', '--config', 'CPackSourceConfig.cmake']
+        output_file_path = os.path.join(self.args.output, "packSourceOutput.txt")
+        return_code = Utils.run(cmd, output_path, output_file_path = output_file_path)
+
+        return return_code
 
     def run(self, input_path = None, output_path = None):
         if input_path is None:
@@ -401,6 +441,13 @@ class BuildSystem:
 
         if self.args.doxygen or self.args.run_doxygen_only:
             self.doxygen.run(self.args)
+
+        if self.args.install:
+            self.runInstall(output_path, self.args.install_prefix)
+
+        if self.args.pack:
+            self.runPack(output_path)
+
         return True
 
     def simpleRun(self, app_name):

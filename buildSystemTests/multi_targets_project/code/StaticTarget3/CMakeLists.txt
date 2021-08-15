@@ -12,4 +12,7 @@ AddStaticLibTarget(
     RESOURCES_TO_COPY 
     "${CMAKE_CURRENT_SOURCE_DIR}/res_static3_b" TO "${CMAKE_BINARY_DIR}/StaticTarget3/res"
     "${CMAKE_CURRENT_SOURCE_DIR}/other_res_static3/abc" TO "${CMAKE_BINARY_DIR}/StaticTarget3/res"
+
+    INSTALL_TARGET_DIR "output_install/StaticTarget3"
+    INSTALL_HEADERS_DIR "output_install/StaticTarget3/headers"
 )

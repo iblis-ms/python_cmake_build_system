@@ -13,4 +13,7 @@ AddSharedLibTarget(
     RESOURCES_TO_COPY 
     "${CMAKE_CURRENT_SOURCE_DIR}/res_shared1_b" TO "${CMAKE_BINARY_DIR}/SharedTarget1/res"
     "${CMAKE_CURRENT_SOURCE_DIR}/other_res_shared1/abc" TO "${CMAKE_BINARY_DIR}/SharedTarget1/res"
+
+    INSTALL_TARGET_DIR "output_install/SharedTarget1"
+    INSTALL_HEADERS_DIR "output_install/SharedTarget1/headers"
 )
