@@ -33,6 +33,13 @@ jobs:
         - clang-11 --version
         - cmake --version
         - python3 --version
+        - whereis cmake
+        - echo "PATH=${PATH}"
+        - wget https://cmake.org/files/v3.20/cmake-3.20.5-linux-x86_64.tar.gz
+        - tar -xzf cmake-3.20.5-linux-x86_64.tar.gz
+        - export PATH="`pwd`/cmake-3.20.5-linux-x86_64/bin:${PATH}"
+        - cmake --version
+        - whereis cmake
        # - cd buildSystemTests && python3 runTests.py
       env:
         - MATRIX_EVAL="CC=clang-11.0 && CXX=clang++-11.0"
@@ -41,6 +48,10 @@ jobs:
       name: "MacOS clang 12, gcc-10"
       os: osx
       osx_image: xcode12.5
+      addons:
+        homebrew:
+          packages:
+          - gcc@10
       script:
         - pip3 install conan
         - pip3 install parameterized
