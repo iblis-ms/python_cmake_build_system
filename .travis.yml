@@ -2,7 +2,7 @@ language: minimal
 
 stages:
   - setup
-# - check
+  - run_tests
 
 jobs:
   include:
@@ -64,3 +64,93 @@ jobs:
         - cmake --version
         - python3 --version
         - cd buildSystemTests && python3 runTests.py
+
+    - stage: run_tests
+      name: "Linux clang 11, gcc 10 - run TestSingleExe"
+      os: linux
+      dist: focal
+      script:
+        - clang-11 --version
+        - cmake --version
+        - python3 --version
+        - cd buildSystemTests && python3 runTests.py TestSingleExe
+
+    - stage: run_tests
+      name: "Linux clang 11, gcc 10 - run ParameterTestSingleExe"
+      os: linux
+      dist: focal
+      script:
+        - clang-11 --version
+        - cmake --version
+        - python3 --version
+        - cd buildSystemTests && python3 runTests.py ParameterTestSingleExe
+
+    - stage: run_tests
+      name: "Linux clang 11, gcc 10 - run TestCMakeDefine"
+      os: linux
+      dist: focal
+      script:
+        - clang-11 --version
+        - cmake --version
+        - python3 --version
+        - cd buildSystemTests && python3 runTests.py TestCMakeDefine
+
+    - stage: run_tests
+      name: "Linux clang 11, gcc 10 - run TestCompilerProfileExe"
+      os: linux
+      dist: focal
+      script:
+        - clang-11 --version
+        - cmake --version
+        - python3 --version
+        - cd buildSystemTests && python3 runTests.py TestCompilerProfileExe
+
+    - stage: run_tests
+      name: "Linux clang 11, gcc 10 - run TestMultitargetProject"
+      os: linux
+      dist: focal
+      script:
+        - clang-11 --version
+        - cmake --version
+        - python3 --version
+        - cd buildSystemTests && python3 runTests.py TestMultitargetProject
+        
+    - stage: run_tests
+      name: "Linux clang 11, gcc 10 - run ParameterTestBenchmarksTest"
+      os: linux
+      dist: focal
+      script:
+        - clang-11 --version
+        - cmake --version
+        - python3 --version
+        - cd buildSystemTests && python3 runTests.py ParameterTestBenchmarksTest
+        
+    - stage: run_tests
+      name: "Linux clang 11, gcc 10 - run TestBenchmarksTest"
+      os: linux
+      dist: focal
+      script:
+        - clang-11 --version
+        - cmake --version
+        - python3 --version
+        - cd buildSystemTests && python3 runTests.py TestBenchmarksTest
+        
+    - stage: run_tests
+      name: "Linux clang 11, gcc 10 - run TestSanitizerIssue"
+      os: linux
+      dist: focal
+      script:
+        - clang-11 --version
+        - cmake --version
+        - python3 --version
+        - cd buildSystemTests && python3 runTests.py TestSanitizerIssue
+        
+    - stage: run_tests
+      name: "Linux clang 11, gcc 10 - run TestDoxygen"
+      os: linux
+      dist: focal
+      script:
+        - clang-11 --version
+        - cmake --version
+        - python3 --version
+        - cd buildSystemTests && python3 runTests.py TestDoxygen

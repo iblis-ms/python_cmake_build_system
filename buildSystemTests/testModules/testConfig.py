@@ -52,7 +52,7 @@ class TestConfig:
         
         clang_gcc_generators = ['Unix Makefiles', 'Ninja', 'Eclipse CDT4 - Ninja', 'Eclipse CDT4 - Unix Makefiles']
         clang_gcc_compilers = [TestConfig.config_data_input_gcc, TestConfig.config_data_input_clang]
-        profiles = ['Debug', 'Release']
+        profiles = ['Debug'] #, 'Release']
         
         output = []
         for generator in clang_gcc_generators:
@@ -88,7 +88,7 @@ class TestConfig:
             clang_gcc_generators.extend(['Ninja', 'Eclipse CDT4 - Ninja'])
 
         clang_gcc_compilers = [TestConfig.config_data_input_gcc] # TestConfig.config_data_input_clang, 
-        profiles = ['Debug', 'Release']
+        profiles = ['Debug'] #, 'Release']
         
         output_config = []
         for generator in clang_gcc_generators:
@@ -149,7 +149,7 @@ class TestConfig:
             clang_gcc_generators.extend(['Ninja', 'Eclipse CDT4 - Ninja'])
 
         clang_gcc_compilers = [TestConfig.config_data_input_clang, TestConfig.config_data_input_gcc] 
-        profiles = ['Debug', 'Release']
+        profiles = ['Debug'] #, 'Release']
         
         output_config = []
         for generator in clang_gcc_generators:
