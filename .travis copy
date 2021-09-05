@@ -1,0 +1,27 @@
+os: linux
+language: c++
+
+
+
+matrix:
+  include:
+    - os: linux
+      dist: focal
+    - os: osx
+      osx_image: xcode12.2
+
+
+compiler:
+  - clang
+  - gcc
+
+
+before_install:
+- pip3 install requests
+- pip3 install conan
+
+
+
+script:
+- if [ "$TRAVIS_OS_NAME" = "linux" ];  cd buildSystemTests && ./travis_linux.sh ; fi
+- if [ "$TRAVIS_OS_NAME" = "osx" ];  cd buildSystemTests && ./travis_macos.sh ; fi

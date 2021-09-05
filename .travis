@@ -1,27 +1,27 @@
-os: linux
-language: c++
-
-
-
 matrix:
   include:
+    # works on Precise and Trusty
     - os: linux
-      dist: focal
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-7
+      env:
+        - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
+    - os: linux
+      addons:
+        apt:
+          sources:
+            - llvm-toolchain-trusty-5.0
+          packages:
+            - clang-5.0
+      env:
+        - MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0"
     - os: osx
-      osx_image: xcode12.2
-
-
-compiler:
-  - clang
-  - gcc
-
-
+          osx_image: xcode8
+          env:
+            - MATRIX_EVAL="brew install gcc && CC=gcc-7 && CXX=g++-7"
 before_install:
-- pip3 install requests
-- pip3 install conan
-
-
-
-script:
-- if [ "$TRAVIS_OS_NAME" = "linux" ];  cd buildSystemTests && ./travis_linux.sh ; fi
-- if [ "$TRAVIS_OS_NAME" = "osx" ];  cd buildSystemTests && ./travis_macos.sh ; fi
+    - eval "${MATRIX_EVAL}"
