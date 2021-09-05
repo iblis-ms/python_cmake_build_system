@@ -9,8 +9,8 @@ import sys
 
 def main():
     build_system = build.buildSystem.BuildSystem()
-
-    sys.exit(build_system.simpleRun('Test App'))
+    build_ok = build_system.simpleRun('Test App')
+    sys.exit(not build_ok)
 
 if __name__ == "__main__":
     main()
