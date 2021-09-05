@@ -11,6 +11,7 @@ install:
   - pip install conan
   - pip install parameterized
   - pip install gcovr
+  - where gcc
   
 build: off
 

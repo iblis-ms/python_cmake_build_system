@@ -5,11 +5,12 @@
 # ULR: https://github.com/iblis-ms/python_cmake_build_system
 
 import build.buildSystem
+import sys
 
 def main():
     build_system = build.buildSystem.BuildSystem()
 
-    return build_system.simpleRun('Test App')
+    sys.exit(build_system.simpleRun('Test App'))
 
 if __name__ == "__main__":
     main()

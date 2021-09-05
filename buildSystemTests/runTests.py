@@ -628,7 +628,7 @@ class TestDoxygen(TestBase):
 def setupLogger():
     logger = logging.getLogger("BuildSystemTest")
     consoleLoggerhandler = logging.StreamHandler()
-    consoleLoggerhandler.setLevel(logging.INFO)
+    consoleLoggerhandler.setLevel(logging.WARN)
     consoleFormatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     consoleLoggerhandler.setFormatter(consoleFormatter)
     logger.addHandler(consoleLoggerhandler)

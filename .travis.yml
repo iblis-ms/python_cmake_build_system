@@ -40,6 +40,11 @@ jobs:
         - export PATH="`pwd`/cmake-3.20.5-linux-x86_64/bin:${PATH}"
         - cmake --version
         - whereis cmake
+        - wget https://github.com/ninja-build/ninja/releases/download/v1.10.2/ninja-linux.zip
+        - unzip ninja-linux.zip
+        - mkdir ninja_dir
+        - mv ninja ninja_dir
+        - export PATH="`pwd`/ninja_dir:${PATH}"
         - cd buildSystemTests && python3 runTests.py
         
     - stage: setup
@@ -50,6 +55,7 @@ jobs:
         homebrew:
           packages:
           - gcc@10
+          - ninja
       script:
         - pip3 install conan
         - pip3 install parameterized
