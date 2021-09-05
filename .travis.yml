@@ -28,6 +28,7 @@ jobs:
             - python3-pip
       script:
         - pip3 install conan
+        - pip3 install parameterized
         - clang-11 --version
         - cmake --version
         - python3 --version
@@ -39,13 +40,9 @@ jobs:
       name: "MacOS clang 12, gcc-10"
       os: osx
       osx_image: xcode12.5
-      addons:
-        homebrew:
-          packages:
-            - gcc@10
-            - conan
       script:
         - pip3 install conan
+        - pip3 install parameterized
         - gcc-10 --version
         - g++-10 --version
         - cmake --version
